@@ -1,0 +1,32 @@
+FROM ubuntu:24.04
+
+# avoid interactive prompts
+ARG DEBIAN_FRONTEND=noninteractive
+
+# install packages: snort, default rules, ssh, syslog, net-tools
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      snort \
+      snort-rules-default \
+      openssh-server \
+      rsyslog \
+      net-tools \
+    && rm -rf /var/lib/apt/lists/*
+
+# setup Snort log directory
+RUN mkdir -p /var/log/snort && \
+    chown -R snort:snort /var/log/snort
+
+# configure SSH
+RUN mkdir -p /var/run/sshd && \
+    sed -i 's/^#PermitRootLogin .*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    # set root password to "root" (override in production!)
+    echo 'root:root' | chpasswd
+
+# expose Snort and SSH ports
+EXPOSE 514/udp
+EXPOSE 22/tcp
+
+# start sshd in background, then run Snort
+ENTRYPOINT ["/bin/bash", "-c", "/usr/sbin/sshd && exec snort -A console -c /etc/snort/snort.conf -i eth0"]
