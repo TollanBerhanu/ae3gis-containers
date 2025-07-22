@@ -1,0 +1,30 @@
+FROM ubuntu:24.04
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Install packages: Suricata, SSH, syslog, net-tools
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      suricata \
+      suricata-update \
+      openssh-server \
+      rsyslog \
+      net-tools && \
+    suricata-update && \
+    rm -rf /var/lib/apt/lists/*
+
+# create log and run directories
+RUN mkdir -p /var/log/suricata /var/run/sshd && \
+    sed -i 's/^#PermitRootLogin .*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    echo 'root:root' | chpasswd
+
+EXPOSE 514/udp 22/tcp
+
+# launch ssh only
+CMD ["/usr/sbin/sshd", "-D"]
+
+# launch sshd in the background, then run Suricata on eth0
+# ENTRYPOINT ["/bin/bash", "-c", "/usr/sbin/sshd && exec suricata -c /etc/suricata/suricata.yaml -i eth0"]
+
+# launch sshd in the foreground and run Suricata on any interface
+# ENTRYPOINT ["/bin/bash", "-c", "/usr/sbin/sshd -D & exec suricata -c /etc/suricata/suricata.yaml -i any"]
