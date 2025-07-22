@@ -1,17 +1,12 @@
-# 1) Base image
+# Use Ubuntu 16.04 as base
 FROM ubuntu:16.04
 
-# 2) Avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 3) Enable source repos so we can apt-get build-dep
-RUN sed -i 's|^# deb-src|deb-src|' /etc/apt/sources.list
-
-# 4) Update & install build-deps + runtime deps
-RUN apt-get update && \
-    # pull in *all* distro build-deps for Samba
+# 1) Enable source repos, install build-deps + runtime tools + CA certs
+RUN sed -i 's|^# deb-src|deb-src|' /etc/apt/sources.list && \
+    apt-get update && \
     apt-get build-dep -y samba && \
-    # plus runtime/tools we need
     apt-get install -y --no-install-recommends \
       build-essential \
       python \
@@ -21,17 +16,17 @@ RUN apt-get update && \
       openssh-server \
       rsyslog \
       net-tools && \
-    # ensure /usr/bin/python → Python 2 (for waf)
     ln -sf /usr/bin/python2 /usr/bin/python && \
-    # cleanup
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# 5) SSH setup (root password = toor)
+# 2) SSH setup: root password + allow root/password login
 RUN mkdir /var/run/sshd && \
-    echo 'root:toor' | chpasswd && \
-    sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+    echo 'root:root' | chpasswd && \
+    sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?UsePAM.*/UsePAM no/' /etc/ssh/sshd_config
 
-# 6) Grab, compile, install Samba 4.5.9
+# 3) Download, compile & install vulnerable Samba 4.5.9
 WORKDIR /opt
 RUN wget https://download.samba.org/pub/samba/stable/samba-4.5.9.tar.gz && \
     tar xzf samba-4.5.9.tar.gz && \
@@ -41,19 +36,30 @@ RUN wget https://download.samba.org/pub/samba/stable/samba-4.5.9.tar.gz && \
     make install && \
     cd .. && rm -rf samba-4.5.9*
 
-# 7) Put Samba binaries in PATH
+# 4) Put Samba binaries in PATH
 ENV PATH="/usr/local/samba/sbin:/usr/local/samba/bin:${PATH}"
 
-# 8) Add a minimal smb.conf
+# NOTE: Not requrired for installing on VM ---------------------------
+# Make smbd/smbclient visible on all shells 
+RUN ln -s /usr/local/samba/sbin/smbd    /usr/local/sbin/ && \
+    ln -s /usr/local/samba/bin/smbclient /usr/local/bin/
+# Export the Samba paths in a login-profile
+RUN printf 'export PATH=/usr/local/samba/bin:/usr/local/samba/sbin:$PATH\n' \
+    > /etc/profile.d/samba.sh && \
+    chmod +x /etc/profile.d/samba.sh
+# --------------------------------------------------------------------
+
+
+# 5) Copy minimal smb.conf
 RUN mkdir -p /usr/local/samba/etc
 COPY smb.conf /usr/local/samba/etc/smb.conf
 
-# 9) Expose SSH + SMB
+# 6) Expose SSH + SMB ports
 EXPOSE 22 139 445
 
-# 10) Launch services properly
-CMD ["/bin/bash", "-c", "\
+# 7) Start sshd, rsyslog, then Samba in one command
+CMD ["/bin/bash","-c", "\
+    /usr/sbin/sshd && \
     service rsyslog start && \
-    service ssh restart && \
     exec /usr/local/samba/sbin/smbd -F --no-process-group\
 "]
