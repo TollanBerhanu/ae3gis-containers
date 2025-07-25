@@ -1,9 +1,8 @@
-# Use Ubuntu 16.04 as base
 FROM ubuntu:16.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 1) Enable source repos, install build-deps + runtime tools + CA certs
+# Enable source repos, install build-deps + runtime tools + CA certs
 RUN sed -i 's|^# deb-src|deb-src|' /etc/apt/sources.list && \
     apt-get update && \
     apt-get build-dep -y samba && \
@@ -19,14 +18,14 @@ RUN sed -i 's|^# deb-src|deb-src|' /etc/apt/sources.list && \
     ln -sf /usr/bin/python2 /usr/bin/python && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# 2) SSH setup: root password + allow root/password login
+# SSH setup: root password + allow root/password login
 RUN mkdir /var/run/sshd && \
     echo 'root:root' | chpasswd && \
     sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
     sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
     sed -i 's/^#\?UsePAM.*/UsePAM no/' /etc/ssh/sshd_config
 
-# 3) Download, compile & install vulnerable Samba 4.5.9
+# Download, compile & install vulnerable Samba 4.5.9
 WORKDIR /opt
 RUN wget https://download.samba.org/pub/samba/stable/samba-4.5.9.tar.gz && \
     tar xzf samba-4.5.9.tar.gz && \
@@ -36,7 +35,7 @@ RUN wget https://download.samba.org/pub/samba/stable/samba-4.5.9.tar.gz && \
     make install && \
     cd .. && rm -rf samba-4.5.9*
 
-# 4) Put Samba binaries in PATH
+# Put Samba binaries in PATH
 ENV PATH="/usr/local/samba/sbin:/usr/local/samba/bin:${PATH}"
 
 # NOTE: Not requrired for installing on VM ---------------------------
@@ -47,17 +46,17 @@ RUN ln -s /usr/local/samba/sbin/smbd    /usr/local/sbin/ && \
 RUN printf 'export PATH=/usr/local/samba/bin:/usr/local/samba/sbin:$PATH\n' \
     > /etc/profile.d/samba.sh && \
     chmod +x /etc/profile.d/samba.sh
-# --------------------------------------------------------------------
+# ---------------------------------------------------
 
 
-# 5) Copy minimal smb.conf
+# Copy minimal smb.conf
 RUN mkdir -p /usr/local/samba/etc
 COPY smb.conf /usr/local/samba/etc/smb.conf
 
-# 6) Expose SSH + SMB ports
+# Expose SSH + SMB ports
 EXPOSE 22 139 445
 
-# 7) Start sshd, rsyslog, then Samba in one command
+# Start sshd, rsyslog, then Samba in one command
 CMD ["/bin/bash","-c", "\
     /usr/sbin/sshd && \
     service rsyslog start && \
