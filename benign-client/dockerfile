@@ -1,0 +1,11 @@
+# Dockerfile.benign
+FROM ubuntu:20.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y iputils-ping curl wget net-tools dnsutils tcpdump && \
+    apt-get clean
+
+# Default to bash shell
+CMD ["/bin/bash"]
