@@ -1,0 +1,11 @@
+# Dockerfile.malicious
+FROM ubuntu:20.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y iputils-ping nmap netcat hydra curl tcpdump && \
+    apt-get clean
+
+# Default to bash shell
+CMD ["/bin/bash"]
