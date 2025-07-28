@@ -84,6 +84,14 @@ EXPOSE 2222
 
 # # Run services
 # CMD ["sh", "-c", "sysctl -w net.ipv4.ip_forward=1 && service rsyslog start && service ssh start && suricata -i eth1 -c /etc/suricata/suricata.yaml -D && tail -f /var/log/suricata/fast.log"]
+
 # Run services manually in the foreground
-CMD ["sh", "-c", "sysctl -w net.ipv4.ip_forward=1 && rsyslogd && /usr/sbin/sshd -D && suricata -i eth1 -c /etc/suricata/suricata.yaml -D && tail -f /var/log/suricata/fast.log"]
+# CMD ["sh", "-c", "sysctl -w net.ipv4.ip_forward=1 && rsyslogd && /usr/sbin/sshd -D && suricata -i eth1 -c /etc/suricata/suricata.yaml -D && tail -f /var/log/suricata/fast.log"]
+
+# Run services manually in the background
+CMD ["sh", "-c", "sysctl -w net.ipv4.ip_forward=1 && \
+    rsyslogd & \
+    /usr/sbin/sshd -D & \
+    suricata -i eth1 -c /etc/suricata/suricata.yaml -D & \
+    tail -f /var/log/suricata/fast.log"]
 
