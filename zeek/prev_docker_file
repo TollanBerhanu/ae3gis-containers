@@ -1,0 +1,59 @@
+FROM ubuntu:22.04
+ARG DEBIAN_FRONTEND=noninteractive
+
+# 1) Install prerequisites, including CA bundle
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      ca-certificates \
+      curl \
+      gnupg2 \
+      lsb-release \
+      iproute2 \
+      iputils-ping \
+      net-tools \
+      tcpdump \
+      vim && \
+    update-ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# 2) Add the Zeek APT repository
+# RUN curl -fsSL https://download.opensuse.org/repositories/security:/zeek/xUbuntu_22.04/Release.key \
+#       | gpg --dearmor -o /etc/apt/trusted.gpg.d/zeek-archive.gpg && \
+#     echo "deb http://download.opensuse.org/repositories/security:/zeek/xUbuntu_22.04/ /" \
+#       > /etc/apt/sources.list.d/zeek.list
+
+RUN echo 'deb https://download.opensuse.org/repositories/security:/zeek/xUbuntu_22.04/ /' | tee /etc/apt/sources.list.d/security:zeek.list && \
+    curl -fsSL https://download.opensuse.org/repositories/security:zeek/xUbuntu_22.04/Release.key | gpg --dearmor | tee /etc/apt/trusted.gpg.d/security_zeek.gpg > /dev/null && \
+    apt-get update  && \
+    apt-get install -y --no-install-recommends zeek-7.0 && \
+    rm -rf /var/lib/apt/lists/*
+
+# 3) Install Zeek
+# RUN apt-get update && \
+#     apt-get install -y --no-install-recommends zeek && \
+    # rm -rf /var/lib/apt/lists/*
+
+CMD ["bash", "-c", "set -e; echo 1 > /proc/sys/net/ipv4/ip_forward"]
+
+
+# # Base off the official Zeek LTS image
+# FROM zeek/zeek:lts
+
+# # Switch to root so we can install routing tools
+# USER root
+
+# # Install just the networking tools we need
+# RUN apt-get update && \
+#     apt-get install -y --no-install-recommends \
+#       iproute2 \
+#       iputils-ping \
+#       net-tools \
+#       iptables && \
+#     rm -rf /var/lib/apt/lists/*
+
+
+# # Drop back to the Zeek user (optional, but cleaner)
+# USER zeek
+
+
+# CMD ["bash", "-c", "set -e; echo 1 > /proc/sys/net/ipv4/ip_forward"]
