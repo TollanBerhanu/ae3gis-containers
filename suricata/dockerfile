@@ -69,15 +69,32 @@ RUN mkdir /var/run/sshd && \
     sed -i 's/Port 22/Port 2222/' /etc/ssh/sshd_config
 
 # Logging
-RUN touch /var/log/suricata.log && \
+RUN touch /var/log/suricata/fast.log  && \
+    touch /var/log/suricata.log && \
     ln -s /var/log/suricata.log /var/log/suricata.log.link
 
 # Suricata config: allow ping, alert on Nmap
-RUN mkdir -p /etc/suricata/rules && echo 'alert tcp any any -> any any (msg:"Nmap Scan Detected"; flags:S,12; threshold:type limit, track by_src, count 1, seconds 60; classtype:attempted-recon; sid:1000001; rev:1;)' > /etc/suricata/rules/local.rules
+# RUN mkdir -p /etc/suricata/rules && echo 'alert tcp any any -> any any (msg:"Nmap Scan Detected"; flags:S,12; threshold:type limit, track by_src, count 1, seconds 60; classtype:attempted-recon; sid:1000001; rev:1;)' > /etc/suricata/rules/local.rules
+
+RUN suricata-update && \
+    mkdir -p /etc/suricata/rules && \
+    echo 'alert icmp any any -> any any (msg:"ICMP Ping Detected"; itype:8; threshold:type limit, track by_src, count 1, seconds 60; classtype:icmp-event; sid:1000002; rev:1;)' > /etc/suricata/rules/local.rules && \
+    echo 'alert tcp any any -> any any (msg:"Nmap Scan Detected"; flags:S,12; threshold:type limit, track by_src, count 1, seconds 60; classtype:attempted-recon; sid:1000001; rev:1;)' >> /etc/suricata/rules/local.rules
 
 # Make sure Suricata uses local.rules
-RUN sed -i 's|default-rule-path: /etc/suricata/rules|default-rule-path: /etc/suricata/rules|' /etc/suricata/suricata.yaml && \
-    sed -i 's| - suricata-rules| - local.rules|' /etc/suricata/suricata.yaml
+# RUN sed -i 's|default-rule-path: /etc/suricata/rules|default-rule-path: /etc/suricata/rules|' /etc/suricata/suricata.yaml && \
+#     sed -i 's| - suricata-rules| - local.rules|' /etc/suricata/suricata.yaml
+RUN sed -i 's|default-rule-path: /var/lib/suricata/rules|default-rule-path: /etc/suricata/rules|' /etc/suricata/suricata.yaml && \
+    sed -i 's| - suricata.rules| - local.rules|' /etc/suricata/suricata.yaml
+
+# Add network ip and subnet to vars -> address-groups -> HOME_NET : "[192.168.0.0/24, 192.168.1.0/24]"
+# Change outputs -> - eve-log -> community-id to true
+# Change interface to eth_ in suricata.yaml (default is eth0)
+# Test by running `suricata -T -c /etc/suricata/suricata.yaml -v`
+# Run `suricata -i eth0 -c /etc/suricata/suricata.yaml -D && tail -f /var/log/suricata/fast.log`
+# Check if Suricata is running with `ps aux | grep suricata`
+# Kill Suricata with `pkill suricata` or `kill -9 <pid> && rm -f /var/run/suricata.pid`
+
 
 # Expose SSH port
 EXPOSE 2222
@@ -89,9 +106,11 @@ EXPOSE 2222
 # CMD ["sh", "-c", "sysctl -w net.ipv4.ip_forward=1 && rsyslogd && /usr/sbin/sshd -D && suricata -i eth1 -c /etc/suricata/suricata.yaml -D && tail -f /var/log/suricata/fast.log"]
 
 # Run services manually in the background
-CMD ["sh", "-c", "sysctl -w net.ipv4.ip_forward=1 && \
-    rsyslogd & \
-    /usr/sbin/sshd -D & \
-    suricata -i eth1 -c /etc/suricata/suricata.yaml -D & \
-    tail -f /var/log/suricata/fast.log"]
-
+# CMD ["sh", "-c", "sysctl -w net.ipv4.ip_forward=1 && \
+#     rsyslogd & \
+#     /usr/sbin/sshd -D & \
+#     suricata -i eth1 -c /etc/suricata/suricata.yaml -D & \
+#     tail -f /var/log/suricata/fast.log"]
+    
+CMD ["sh", "-c", "sysctl -w net.ipv4.ip_forward=1 && rsyslogd && service ssh start && suricata -i eth0 -c /etc/suricata/suricata.yaml -D && tail -f /var/log/suricata/fast.log"]
+# sysctl -w net.ipv4.ip_forward=1 && service ssh start && pkill suricata && suricata -i eth1 -c /etc/suricata/suricata.yaml -D && tail -f /var/log/suricata/fast.log
