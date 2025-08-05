@@ -1,53 +1,37 @@
-# FROM ubuntu:22.04
-# ARG DEBIAN_FRONTEND=noninteractive
+FROM ubuntu:22.04
 
-# # 1) Install prerequisites, including CA bundle
-# RUN apt-get update && \
-#     apt-get install -y --no-install-recommends \
-#       ca-certificates \
-#       curl \
-#       gnupg2 \
-#       lsb-release \
-#       iproute2 \
-#       iputils-ping \
-#       net-tools \
-#       tcpdump \
-#       vim && \
-#     update-ca-certificates && \
-#     rm -rf /var/lib/apt/lists/*
+ENV DEBIAN_FRONTEND=noninteractive
 
-# # 2) Add the Zeek APT repository
-# RUN curl -fsSL https://download.opensuse.org/repositories/security:zeek/xUbuntu_22.04/Release.key \
-#       | gpg --dearmor -o /etc/apt/trusted.gpg.d/zeek-archive.gpg && \
-#     echo "deb http://download.opensuse.org/repositories/security:/zeek/xUbuntu_22.04/ /" \
-#       > /etc/apt/sources.list.d/zeek.list
+# Install essential dependencies
+RUN apt-get update && apt-get install -y \
+    curl gnupg ca-certificates \
+    software-properties-common \
+    openssh-server sudo rsyslog net-tools iproute2 iputils-ping \
+    tcpdump nano vim
 
-# # 3) Install Zeek
-# RUN apt-get update && \
-#     apt-get install -y --no-install-recommends zeek && \
-#     rm -rf /var/lib/apt/lists/*
+# Add Zeek repository for Ubuntu 22.04
+RUN echo 'deb http://download.opensuse.org/repositories/security:/zeek/xUbuntu_22.04/ /' \
+    | tee /etc/apt/sources.list.d/security:zeek.list \
+    && curl -fsSL https://download.opensuse.org/repositories/security:zeek/xUbuntu_22.04/Release.key \
+    | gpg --dearmor | tee /etc/apt/trusted.gpg.d/zeek_oss_repo.gpg > /dev/null
 
-# CMD ["bash", "-c", "set -e; echo 1 > /proc/sys/net/ipv4/ip_forward"]
+# Install Zeek from the repository
+RUN apt-get update && apt-get install -y \
+    zeek-6.0 \
+    zeek-6.0-core \
+    zeekctl-6.0
 
+# Add Zeek to PATH (Zeek installs under /opt/zeek‑6.0)
+ENV PATH="/opt/zeek/bin:$PATH"
 
-# Base off the official Zeek LTS image
-FROM zeek/zeek:lts
+# Configure SSH
+RUN mkdir /var/run/sshd \
+    && echo 'root:pass' | chpasswd \
+    && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 
-# Switch to root so we can install routing tools
-USER root
+# Enable IPv4 forwarding
+RUN echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf
 
-# Install just the networking tools we need
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-      iproute2 \
-      iputils-ping \
-      net-tools \
-      iptables && \
-    rm -rf /var/lib/apt/lists/*
+EXPOSE 22
 
-
-# Drop back to the Zeek user (optional, but cleaner)
-USER zeek
-
-
-CMD ["bash", "-c", "set -e; echo 1 > /proc/sys/net/ipv4/ip_forward"]
+CMD ["sh", "-c", "service rsyslog start && service ssh start && bash"]
