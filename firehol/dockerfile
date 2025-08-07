@@ -27,6 +27,9 @@ RUN echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf
 # Add your firehol ruleset
 COPY firehol.conf /etc/firehol.conf
 
+# Enable Firehol service
+RUN echo "START_FIREHOL=YES" > /etc/default/firehol
+
 # Expose SSH port
 EXPOSE 22
 
