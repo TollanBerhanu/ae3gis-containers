@@ -1,0 +1,25 @@
+FROM ubuntu:22.04
+
+# Set non-interactive mode
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    curl gnupg lsb-release sudo vim net-tools iputils-ping rsyslog openssh-server \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add Wazuh repo and install ONLY manager
+RUN curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | apt-key add - && \
+    echo "deb https://packages.wazuh.com/4.x/apt stable main" | tee /etc/apt/sources.list.d/wazuh.list && \
+    apt-get update && apt-get install -y wazuh-manager && \
+    rm -rf /var/lib/apt/lists/*
+
+# Enable SSH
+RUN mkdir /var/run/sshd && echo 'root:root' | chpasswd
+
+# Enable IPv4 forwarding
+RUN echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
+
+EXPOSE 22 1514/udp 1515/tcp
+
+CMD service ssh start && service wazuh-manager start && tail -f /var/ossec/logs/ossec.log
