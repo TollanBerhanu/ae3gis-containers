@@ -1,0 +1,41 @@
+# FROM ubuntu:22.04
+
+# # Install DHCP server and basic tools
+# RUN apt-get update && apt-get install -y \
+#     isc-dhcp-server \
+#     net-tools iproute2 iputils-ping \
+#     nano \
+#     && apt-get clean
+
+# # Copy default config (you'll edit this later)
+# COPY dhcpd.conf /etc/dhcp/dhcpd.conf
+
+# # Allow service to run in foreground
+# CMD ["/usr/sbin/dhcpd", "-f", "-d"]
+
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    isc-dhcp-server rsyslog openssh-server net-tools iproute2 iputils-ping \
+    tcpdump vim \
+  && rm -rf /var/lib/apt/lists/*
+
+# Basic SSH setup (demo credentials; change in your lab!)
+# RUN useradd -m -s /bin/bash lab && echo "root:root" | chpasswd
+# RUN mkdir -p /run/sshd && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+
+# Rsyslog: separate log for dhcpd
+# RUN bash -lc 'printf "if (\$programname == \"dhcpd\") then /var/log/dhcpd.log\n& stop\n" > /etc/rsyslog.d/10-dhcpd.conf'
+
+# Default DHCP config (edit ranges as needed)
+RUN mkdir -p /etc/dhcp
+COPY dhcpd.conf /etc/dhcp/dhcpd.conf
+
+# Entrypoint
+COPY start.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
+
+# EXPOSE 22
+# CMD ["/usr/local/bin/start.sh"]
