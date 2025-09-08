@@ -1,19 +1,38 @@
-# Dockerfile for iptables in Ubuntu
-FROM ubuntu:20.04
+# Dockerfile for iptables firewall
+FROM ubuntu:24.04
 
-ARG DEBIAN_FRONTEND=noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-      iptables \
-      iproute2 \
-      iputils-ping \
-      net-tools \
-      tcpdump \
-      vim \
+# Install basic Ubuntu packages + iptables
+RUN apt-get update && apt-get install -y \
+    openssh-server \
+    rsyslog \
+    net-tools \
+    iproute2 \
+    iputils-ping \
+    tcpdump \
+    vim \
+    nano \
+    curl \
+    wget \
+    procps \
+    iptables \
+    iptables-persistent \
+    isc-dhcp-client \
     && rm -rf /var/lib/apt/lists/*
 
-RUN echo 1 > /proc/sys/net/ipv4/ip_forward
-CMD ["/bin/bash"]
-# # Default command keeps container running
-# CMD ["tail", "-f", "/dev/null"]
+# SSH setup: root password + allow root/password login
+RUN mkdir /var/run/sshd && \
+    echo 'root:pass' | chpasswd && \
+    sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?UsePAM.*/UsePAM no/' /etc/ssh/sshd_config
+
+# Expose SSH port
+EXPOSE 22
+
+# Enable IPv4 forwarding
+RUN echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf
+
+# Start services: apply sysctl settings, start rsyslog, and run sshd
+CMD ["sh", "-c", "sysctl -p && rsyslogd && exec /usr/sbin/sshd -D"]

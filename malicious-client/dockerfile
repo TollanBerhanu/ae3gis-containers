@@ -1,11 +1,38 @@
-# Dockerfile.malicious
-FROM ubuntu:20.04
+# Dockerfile for malicious client
+FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && \
-    apt-get install -y iputils-ping nmap netcat hydra curl tcpdump && \
-    apt-get clean
+# Install basic Ubuntu packages + penetration testing tools
+RUN apt-get update && apt-get install -y \
+    openssh-server \
+    rsyslog \
+    net-tools \
+    iproute2 \
+    iputils-ping \
+    tcpdump \
+    vim \
+    nano \
+    curl \
+    wget \
+    procps \
+    nmap \
+    netcat-openbsd \
+    hydra \
+    john \
+    aircrack-ng \
+    isc-dhcp-client \
+    && rm -rf /var/lib/apt/lists/*
 
-# Default to bash shell
-CMD ["/bin/bash"]
+# SSH setup: root password + allow root/password login
+RUN mkdir /var/run/sshd && \
+    echo 'root:pass' | chpasswd && \
+    sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?UsePAM.*/UsePAM no/' /etc/ssh/sshd_config
+
+# Expose SSH port
+EXPOSE 22
+
+# Start services: rsyslog and sshd
+CMD ["sh", "-c", "rsyslogd && exec /usr/sbin/sshd -D"]
