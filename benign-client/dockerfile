@@ -32,5 +32,12 @@ RUN mkdir /var/run/sshd && \
 # Expose SSH port
 EXPOSE 22
 
+# Add traffic scripts
+COPY run_ping.sh /usr/local/bin/run_ping.sh
+COPY run_nmap.sh /usr/local/bin/run_nmap.sh
+COPY run_http.sh /usr/local/bin/run_http.sh
+COPY run_ftp.sh /usr/local/bin/run_ftp.sh
+RUN chmod +x /usr/local/bin/run_*.sh
+
 # Start services: rsyslog and sshd
 CMD ["sh", "-c", "rsyslogd && exec /usr/sbin/sshd -D"]
