@@ -1,0 +1,46 @@
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install Nginx and common tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    nginx \
+    rsyslog \
+    openssh-server \
+    net-tools \
+    iproute2 \
+    iputils-ping \
+    tcpdump \
+    vim \
+    nano \
+    curl \
+    wget \
+    procps \
+  && rm -rf /var/lib/apt/lists/*
+
+# SSH setup: root password + allow root/password login
+RUN mkdir /var/run/sshd && \
+    echo 'root:pass' | chpasswd && \
+    sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?UsePAM.*/UsePAM no/' /etc/ssh/sshd_config
+
+# Default document root and simple index page
+ENV NGINX_DOCUMENT_ROOT=/var/www/html
+RUN mkdir -p "$NGINX_DOCUMENT_ROOT" && \
+    printf '<!doctype html>\n<html>\n  <head>\n    <meta charset="utf-8"/>\n    <title>Nginx is running</title>\n    <style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,sans-serif;padding:2rem;max-width:60ch;margin:auto;line-height:1.5}code{background:#f3f3f3;padding:.2rem .4rem;border-radius:.25rem}</style>\n  </head>\n  <body>\n    <h1>Nginx HTTP Server</h1>\n    <p>Your container is up. Place your site files in <code>%s</code> or mount a volume there.</p>\n  </body>\n</html>\n' "$NGINX_DOCUMENT_ROOT" > "$NGINX_DOCUMENT_ROOT/index.html"
+
+# Configure Nginx to serve from /var/www/html
+RUN sed -i 's#\(root \)/var/www/html;#\1/var/www/html;#' /etc/nginx/sites-available/default && \
+    sed -i 's/index nginx-debian.html/index index.html/g' /etc/nginx/sites-available/default
+
+# Expose HTTP and SSH
+EXPOSE 80 22
+
+# Healthcheck for Nginx
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD curl -fsS http://127.0.0.1:80/ >/dev/null || exit 1
+
+# Start rsyslog, SSH (in background), then run Nginx in the foreground
+CMD ["sh", "-c", "rsyslogd && /usr/sbin/sshd -D & exec nginx -g 'daemon off;' "]
+
+
