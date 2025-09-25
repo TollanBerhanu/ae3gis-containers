@@ -1,0 +1,56 @@
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install vsftpd and common tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    vsftpd \
+    rsyslog \
+    openssh-server \
+    net-tools \
+    iproute2 \
+    iputils-ping \
+    tcpdump \
+    vim \
+    nano \
+    curl \
+    wget \
+    procps \
+  && rm -rf /var/lib/apt/lists/*
+
+# SSH setup: root password + allow root/password login
+RUN mkdir /var/run/sshd && \
+    echo 'root:pass' | chpasswd && \
+    sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?UsePAM.*/UsePAM no/' /etc/ssh/sshd_config
+
+# Create FTP user and directories
+RUN useradd -m ftpuser && echo 'ftpuser:ftppass' | chpasswd && \
+    mkdir -p /home/ftpuser/ftp/upload && \
+    chown -R ftpuser:ftpuser /home/ftpuser/ftp && \
+    chmod -R 755 /home/ftpuser/ftp
+
+# Configure vsftpd for basic usage (local user login, chroot)
+RUN cp /etc/vsftpd.conf /etc/vsftpd.conf.bak && \
+    sed -i 's/^#\?write_enable=.*/write_enable=YES/' /etc/vsftpd.conf && \
+    sed -i 's/^#\?local_enable=.*/local_enable=YES/' /etc/vsftpd.conf && \
+    sed -i 's/^#\?chroot_local_user=.*/chroot_local_user=YES/' /etc/vsftpd.conf && \
+    sed -i 's/^#\?pam_service_name=.*/pam_service_name=vsftpd/' /etc/vsftpd.conf && \
+    sed -i 's/^#\?listen=.*/listen=YES/' /etc/vsftpd.conf && \
+    sed -i 's/^#\?listen_ipv6=.*/listen_ipv6=NO/' /etc/vsftpd.conf && \
+    sed -i 's/^#\?anonymous_enable=.*/anonymous_enable=NO/' /etc/vsftpd.conf && \
+    sed -i 's/^#\?xferlog_enable=.*/xferlog_enable=YES/' /etc/vsftpd.conf && \
+    bash -lc 'grep -qE "^allow_writeable_chroot=" /etc/vsftpd.conf || echo allow_writeable_chroot=YES >> /etc/vsftpd.conf' && \
+    bash -lc 'grep -qE "^local_root=" /etc/vsftpd.conf || echo local_root=/home/ftpuser/ftp >> /etc/vsftpd.conf'
+
+# Expose FTP and SSH ports
+EXPOSE 21 22
+
+# Healthcheck for vsftpd (port open)
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD bash -lc 'nc -z 127.0.0.1 21'
+
+# Start rsyslog, SSH (in background), then run vsftpd in the foreground
+CMD ["sh", "-c", "rsyslogd && /usr/sbin/sshd -D & exec /usr/sbin/vsftpd /etc/vsftpd.conf"]
+
+
