@@ -1,0 +1,23 @@
+# Dockerfile
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    DB_DIR=/var/lib/openvswitch \
+    RUNDIR=/var/run/openvswitch
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      openvswitch-switch openvswitch-common \
+      iproute2 iputils-ping tcpdump ethtool net-tools \
+      tini ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# Make sure runtime dirs exist
+RUN mkdir -p ${DB_DIR} ${RUNDIR} /etc/openvswitch
+
+# Entrypoint
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["/usr/bin/tini","--","/usr/local/bin/docker-entrypoint.sh"]
+
