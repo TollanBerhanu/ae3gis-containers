@@ -1,0 +1,34 @@
+# Dockerfile for apache web-server
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Base tools + Apache + SSH
+RUN apt-get update && apt-get install -y \
+    apache2 \
+    openssh-server \
+    rsyslog \
+    net-tools iproute2 iputils-ping tcpdump \
+    vim nano curl wget procps dnsutils nmap netcat-openbsd \
+    isc-dhcp-client \
+ && rm -rf /var/lib/apt/lists/*
+
+# SSH setup (demo only)
+RUN mkdir -p /var/run/sshd && \
+    echo 'root:pass' | chpasswd && \
+    sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?UsePAM.*/UsePAM no/' /etc/ssh/sshd_config
+
+# Your web content
+COPY index.html /var/www/html/index.html
+
+# Entrypoint (starts services, then shell)
+COPY docker-entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+EXPOSE 80 22
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+# Default to an interactive shell so the console is usable
+CMD ["/bin/bash", "-l"]

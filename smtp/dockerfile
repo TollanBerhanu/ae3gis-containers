@@ -1,0 +1,76 @@
+# Dockerfile for simple Postfix (virtual mailboxes) in GNS3
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV MAIL_DOMAIN=lab.local
+ENV MAIL_USER=test
+# ENV MAIL_PASS=test123   # (not used by postfix-only; left for parity)
+
+# Base packages
+RUN apt-get update && apt-get install -y \
+    postfix \
+    mailutils \
+    rsyslog \
+    net-tools iproute2 iputils-ping tcpdump vim nano curl wget dnsutils nmap \
+    netcat-openbsd isc-dhcp-client openssh-server \
+    && rm -rf /var/lib/apt/lists/*
+
+# SSH (optional)
+RUN mkdir /var/run/sshd && \
+    echo 'root:pass' | chpasswd && \
+    sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?UsePAM.*/UsePAM no/' /etc/ssh/sshd_config
+
+# Preseed postfix
+RUN echo "postfix postfix/main_mailer_type string Internet Site" | debconf-set-selections && \
+    echo "postfix postfix/mailname string ${MAIL_DOMAIN}" | debconf-set-selections
+
+# --- Postfix: switch to virtual mailbox delivery ---
+# Create a dedicated vmail user/group (uid/gid 5000 is common)
+RUN groupadd -g 5000 vmail && useradd -g vmail -u 5000 -d /var/mail vmail
+
+# Configure main.cf for virtual mailboxes (Maildir under /var/mail/vhosts)
+RUN postconf -e "myhostname = mail.${MAIL_DOMAIN}" && \
+    postconf -e "mydomain = ${MAIL_DOMAIN}" && \
+    postconf -e "myorigin = \$mydomain" && \
+    postconf -e "inet_interfaces = all" && \
+    postconf -e "inet_protocols = all" && \
+    postconf -e "mynetworks = 0.0.0.0/0" && \
+    postconf -e "relayhost =" && \
+    postconf -e "smtpd_recipient_restrictions = permit_mynetworks, reject_unauth_destination" && \
+    # IMPORTANT: remove $mydomain from mydestination so mail for lab.local is treated as *virtual*, not local
+    postconf -e "mydestination = \$myhostname, localhost.\$mydomain, localhost" && \
+    # Virtual mailbox settings
+    postconf -e "virtual_transport = virtual" && \
+    postconf -e "virtual_mailbox_base = /var/mail/vhosts" && \
+    postconf -e "virtual_mailbox_domains = ${MAIL_DOMAIN}" && \
+    postconf -e "virtual_mailbox_maps = hash:/etc/postfix/vmailbox" && \
+    postconf -e "virtual_minimum_uid = 5000" && \
+    postconf -e "virtual_uid_maps = static:5000" && \
+    postconf -e "virtual_gid_maps = static:5000" && \
+    # TLS 'may' for lab convenience
+    postconf -e "smtpd_tls_security_level = may" && \
+    postconf -e "smtp_tls_security_level = may"
+
+# vmail storage root
+RUN mkdir -p /var/mail/vhosts && chown -R vmail:vmail /var/mail
+
+# Define one virtual mailbox (test@lab.local) and build the map
+RUN echo "${MAIL_USER}@${MAIL_DOMAIN} ${MAIL_DOMAIN}/${MAIL_USER}/" > /etc/postfix/vmailbox && \
+    postmap /etc/postfix/vmailbox
+
+# Create proper Maildir structure WITHOUT brace expansion
+RUN install -d -m 700 -o vmail -g vmail /var/mail/vhosts/${MAIL_DOMAIN}/${MAIL_USER}/cur && \
+    install -d -m 700 -o vmail -g vmail /var/mail/vhosts/${MAIL_DOMAIN}/${MAIL_USER}/new && \
+    install -d -m 700 -o vmail -g vmail /var/mail/vhosts/${MAIL_DOMAIN}/${MAIL_USER}/tmp
+
+EXPOSE 22 25
+
+COPY docker-entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+EXPOSE 22 25
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["/bin/bash", "-l"]

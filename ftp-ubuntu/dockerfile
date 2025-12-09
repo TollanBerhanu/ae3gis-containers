@@ -1,0 +1,57 @@
+# Pure-FTPd on Ubuntu 22.04 (foreground, simple local user)
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    FTP_USER=ftpuser \
+    FTP_PASS=ftppass \
+    PASV_MIN=21000 \
+    PASV_MAX=21010 \
+    PASV_ADDRESS=0.0.0.0
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      pure-ftpd \
+      openssh-server \
+      ftp \
+      mailutils \
+      swaks \
+      rsyslog \
+      net-tools \
+      iproute2 \
+      iputils-ping \
+      tcpdump \
+      vim \
+      nano \
+      curl \
+      wget \
+      procps \
+      dnsutils \
+      nmap \
+      netcat-openbsd \
+      isc-dhcp-client \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir /var/run/sshd && \
+    echo 'root:pass' | chpasswd && \
+    sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?UsePAM.*/UsePAM no/' /etc/ssh/sshd_config
+
+# Create local user with a VALID shell
+RUN useradd -m -d /home/${FTP_USER} -s /bin/bash ${FTP_USER} && \
+    echo "${FTP_USER}:${FTP_PASS}" | chpasswd
+
+# Classic chroot-safe layout:
+#   /home/ftpuser        -> owned by root, not writable
+#   /home/ftpuser/ftp    -> owned by ftpuser, writable upload dir
+RUN mkdir -p /home/${FTP_USER}/ftp && \
+    chown -R ${FTP_USER}:${FTP_USER} /home/${FTP_USER}/ftp && \
+    chown root:root /home/${FTP_USER} && \
+    chmod 755 /home/${FTP_USER}
+
+COPY docker-entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+EXPOSE 21 ${PASV_MIN}-${PASV_MAX} 22
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["/bin/bash", "-l"]

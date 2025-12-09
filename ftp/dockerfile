@@ -1,0 +1,37 @@
+FROM alpine:3.22.1
+ENV FTP_USER=ae3gis \
+	FTP_PASS=ae3gis123 \
+	GID=1000 \
+	UID=1000 \
+	PUBLIC_IP=0.0.0.0
+
+RUN apk add --no-cache --update \
+      vsftpd=3.0.5-r2 \
+      openssh \
+      rsyslog \
+      net-tools \
+      iproute2 \
+      iputils \
+      tcpdump \
+      vim \
+      nano \
+      curl \
+      wget \
+      bash
+
+COPY [ "/vsftpd.conf", "/etc" ]
+COPY [ "/docker-entrypoint.sh", "/" ]
+RUN chmod +x /docker-entrypoint.sh
+
+RUN ssh-keygen -A && \
+    mkdir -p /var/run/sshd && \
+    echo 'root:pass' | chpasswd && \
+    sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i '/^[[:space:]]*UsePAM/d' /etc/ssh/sshd_config
+
+
+ENTRYPOINT [ "/docker-entrypoint.sh" ]
+CMD ["/usr/sbin/vsftpd", "-obackground=NO", "/etc/vsftpd.conf"]
+EXPOSE 20/tcp 21/tcp 40000-40009/tcp
+HEALTHCHECK CMD netstat -lnt | grep :21 || exit 1

@@ -6,6 +6,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Install basic Ubuntu packages
 RUN apt-get update && apt-get install -y \
     openssh-server \
+    ftp \
+    mailutils \
+    swaks \
     rsyslog \
     net-tools \
     iproute2 \
@@ -20,6 +23,8 @@ RUN apt-get update && apt-get install -y \
     nmap \
     netcat-openbsd \
     isc-dhcp-client \
+    cifs-utils \
+    smbclient \
     && rm -rf /var/lib/apt/lists/*
 
 # SSH setup: root password + allow root/password login
@@ -40,4 +45,4 @@ COPY run_ftp.sh /usr/local/bin/run_ftp.sh
 RUN chmod +x /usr/local/bin/run_*.sh
 
 # Start services: rsyslog and sshd
-CMD ["sh", "-c", "rsyslogd && exec /usr/sbin/sshd -D"]
+CMD ["sh", "-c", "rsyslogd && /usr/sbin/sshd && exec bash -l"]

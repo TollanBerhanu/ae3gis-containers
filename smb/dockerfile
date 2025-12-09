@@ -1,64 +1,57 @@
-FROM ubuntu:16.04
+# Simple Samba server (Ubuntu 24.04)
+FROM ubuntu:24.04
 
-ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=UTC \
+    SMB_USER=smbuser \
+    SMB_PASS=smbpass \
+    SMB_WORKGROUP=WORKGROUP \
+    SMB_SHARE_NAME=share \
+    SMB_SHARE_PATH=/srv/samba/share \
+    SMB_READ_ONLY=no \
+    SMB_BROWSEABLE=yes \
+    SMB_GUEST_OK=no
 
-# Enable source repos, install build-deps + runtime tools + CA certs
-RUN sed -i 's|^# deb-src|deb-src|' /etc/apt/sources.list && \
-    apt-get update && \
-    apt-get build-dep -y samba && \
+# Install samba + tini (for sane PID 1)
+RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-      build-essential \
-      python \
-      ca-certificates \
-      wget \
-      git \
-      openssh-server \
-      rsyslog \
-      net-tools && \
-    ln -sf /usr/bin/python2 /usr/bin/python && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+    samba tini \
+    rsyslog \
+    net-tools \
+    iproute2 \
+    iputils-ping \
+    tcpdump \
+    vim \
+    nano \
+    curl \
+    wget \
+    dnsutils \
+    nmap \
+    netcat-openbsd \
+    isc-dhcp-client \
+    openssh-server \
+    && rm -rf /var/lib/apt/lists/*
 
-# SSH setup: root password + allow root/password login
+# Create share dir and a place for our config/entrypoint
+RUN mkdir -p ${SMB_SHARE_PATH} /opt/smb
+COPY smb.conf /etc/samba/smb.conf
+COPY entrypoint.sh /opt/smb/entrypoint.sh
+RUN chmod +x /opt/smb/entrypoint.sh && \
+    # Quiet down Samba's default logs inside container
+    mkdir -p /var/log/samba && touch /var/log/samba/log.smbd && \
+    # Ensure proper permissions
+    chown -R root:root /etc/samba && \
+    chown -R root:root /opt/smb && \
+    chmod -R 755 /opt/smb
+
 RUN mkdir /var/run/sshd && \
-    echo 'root:root' | chpasswd && \
+    echo 'root:pass' | chpasswd && \
     sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
     sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
     sed -i 's/^#\?UsePAM.*/UsePAM no/' /etc/ssh/sshd_config
 
-# Download, compile & install vulnerable Samba 4.5.9
-WORKDIR /opt
-RUN wget https://download.samba.org/pub/samba/stable/samba-4.5.9.tar.gz && \
-    tar xzf samba-4.5.9.tar.gz && \
-    cd samba-4.5.9 && \
-    ./configure && \
-    make -j"$(nproc)" && \
-    make install && \
-    cd .. && rm -rf samba-4.5.9*
+EXPOSE 139 445 22
 
-# Put Samba binaries in PATH
-ENV PATH="/usr/local/samba/sbin:/usr/local/samba/bin:${PATH}"
-
-# NOTE: Not requrired for installing on VM ---------------------------
-# Make smbd/smbclient visible on all shells 
-RUN ln -s /usr/local/samba/sbin/smbd    /usr/local/sbin/ && \
-    ln -s /usr/local/samba/bin/smbclient /usr/local/bin/
-# Export the Samba paths in a login-profile
-RUN printf 'export PATH=/usr/local/samba/bin:/usr/local/samba/sbin:$PATH\n' \
-    > /etc/profile.d/samba.sh && \
-    chmod +x /etc/profile.d/samba.sh
-# ---------------------------------------------------
-
-
-# Copy minimal smb.conf
-RUN mkdir -p /usr/local/samba/etc
-COPY smb.conf /usr/local/samba/etc/smb.conf
-
-# Expose SSH + SMB ports
-EXPOSE 22 139 445
-
-# Start sshd, rsyslog, then Samba in one command
-CMD ["/bin/bash","-c", "\
-    /usr/sbin/sshd && \
-    service rsyslog start && \
-    exec /usr/local/samba/sbin/smbd -F --no-process-group\
-"]
+# Use tini as PID 1, then run our entrypoint
+ENTRYPOINT ["/usr/bin/tini", "--", "/opt/smb/entrypoint.sh"]
+CMD ["/bin/bash", "-l"]

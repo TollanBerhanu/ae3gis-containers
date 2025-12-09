@@ -1,0 +1,20 @@
+FROM ubuntu:24.04
+
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      rsyslog rsyslog-relp ca-certificates tzdata && \
+    rm -rf /var/lib/apt/lists/*
+
+# minimal rsyslog runtime dirs
+RUN mkdir -p /logs /etc/rsyslog.d
+
+# enable TCP/UDP/RELP modules & our templates
+COPY rsyslog.conf /etc/rsyslog.conf
+COPY 50-listeners.conf /etc/rsyslog.d/50-listeners.conf
+COPY 60-templates.conf /etc/rsyslog.d/60-templates.conf
+
+EXPOSE 514/udp 514/tcp 2514/tcp
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
