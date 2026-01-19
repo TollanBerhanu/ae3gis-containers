@@ -1,0 +1,23 @@
+FROM ubuntu:20.04
+
+# Avoid prompts during build
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install Firefox, X11 VNC server, and XVFB (virtual display)
+RUN apt-get update && \
+    apt-get install -y firefox x11vnc xvfb fluxbox wget && \
+    apt-get clean
+
+# Set up the VNC password (optional, but good practice)
+RUN mkdir ~/.vnc
+RUN x11vnc -storepasswd gns3 ~/.vnc/passwd
+
+# Script to run when container starts
+# 1. Start virtual display
+# 2. Start window manager
+# 3. Start VNC server
+# 4. Start Firefox
+CMD Xvfb :0 -screen 0 1024x768x24 & \
+    fluxbox & \
+    x11vnc -display :0 -usepw -forever & \
+    firefox
