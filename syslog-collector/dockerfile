@@ -1,0 +1,26 @@
+FROM alpine:latest
+
+# 1. Install packages
+# syslog-ng: receives logs
+# curl: for sending data out
+# net-tools & iputils: for debugging (ifconfig, ping, netstat)
+# python3 & py3-flask: for scripting or hosting a mini-server
+# bash: for easier terminal usage
+RUN apk add --no-cache syslog-ng curl net-tools iputils python3 py3-flask bash
+
+# 2. Configure syslog-ng
+# This tells the server to listen on UDP 514 and write to /var/log/student.log
+RUN echo '@version: 4.10' > /etc/syslog-ng/syslog-ng.conf && \
+    echo 'options { keep-hostname(yes); };' >> /etc/syslog-ng/syslog-ng.conf && \
+    echo 'source s_net { network(transport(udp) port(514)); };' >> /etc/syslog-ng/syslog-ng.conf && \
+    echo 'destination d_local { file("/var/log/student.log"); };' >> /etc/syslog-ng/syslog-ng.conf && \
+    echo 'log { source(s_net); destination(d_local); };' >> /etc/syslog-ng/syslog-ng.conf
+
+# 3. Create the log file with open permissions
+RUN touch /var/log/student.log && chmod 666 /var/log/student.log
+
+# 4. Expose ports (Syslog UDP and Web TCP)
+EXPOSE 514/udp 5000/tcp 80/tcp
+
+# 5. Start syslog-ng in foreground
+ENTRYPOINT ["/usr/sbin/syslog-ng", "-F"]
