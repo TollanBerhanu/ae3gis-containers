@@ -1,22 +1,28 @@
-FROM ubuntu:20.04
+FROM alpine:latest
 
-# Avoid prompts during build
-ENV DEBIAN_FRONTEND=noninteractive
+# Install Firefox, VNC, and tools
+RUN apk add --no-cache \
+    firefox \
+    xvfb \
+    x11vnc \
+    fluxbox \
+    ttf-dejavu \
+    bash \
+    curl \
+    iputils \
+    net-tools \
+    mtr \
+    busybox-extras
 
-# Install Firefox, X11 VNC server, and XVFB (virtual display)
-RUN apt-get update && \
-    apt-get install -y firefox x11vnc xvfb fluxbox wget && \
-    apt-get clean
-
-# Set up the VNC password (optional, but good practice)
+    # Set up the VNC password (optional, but good practice)
 RUN mkdir ~/.vnc
 RUN x11vnc -storepasswd gns3 ~/.vnc/passwd
 
-# Script to run when container starts
-# 1. Start virtual display
-# 2. Start window manager
-# 3. Start VNC server
-# 4. Start Firefox
+# CMD Breakdown:
+# 1. Xvfb: Starts the virtual display
+# 2. fluxbox: Starts the window manager
+# 3. x11vnc: Starts VNC with "-usepw" (Use Password)
+# 4. firefox: Starts the browser
 CMD Xvfb :0 -screen 0 1024x768x24 & \
     fluxbox & \
     x11vnc -display :0 -usepw -forever & \
