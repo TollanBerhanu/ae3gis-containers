@@ -1,21 +1,46 @@
-FROM alpine:latest
+# We use Debian 'Bookworm' (Current Stable) Slim version
+# It behaves like a standard Ubuntu/Linux server
+FROM debian:bookworm-slim
 
-# 1. Install packages
-# REMOVED: isc-dhcp-client (it does not exist in Alpine anymore)
-RUN apk add --no-cache syslog-ng curl net-tools iputils python3 py3-flask bash
+# Prevent installer from asking questions (Timezone, etc.)
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 1. Install all requested packages
+# - syslog-ng: The log server
+# - curl: For sending logs
+# - net-tools: 'ifconfig', 'netstat'
+# - iproute2: The 'ip' command you asked for
+# - isc-dhcp-client: The real 'dhclient' command
+# - vim: Text editor
+# - python3 & python3-flask: For the submission server
+# - procps: Adds 'ps' command (helpful for debugging)
+RUN apt-get update && apt-get install -y \
+    syslog-ng \
+    curl \
+    net-tools \
+    iproute2 \
+    isc-dhcp-client \
+    vim \
+    python3 \
+    python3-flask \
+    procps \
+    && rm -rf /var/lib/apt/lists/*
 
 # 2. Configure syslog-ng
-RUN echo '@version: 4.10' > /etc/syslog-ng/syslog-ng.conf && \
+# We overwrite the default complex config with your simple snitch config.
+# Debian Bookworm uses Syslog-ng 3.38+, so version 3.38 is safe.
+RUN echo '@version: 3.38' > /etc/syslog-ng/syslog-ng.conf && \
     echo 'options { keep-hostname(yes); };' >> /etc/syslog-ng/syslog-ng.conf && \
     echo 'source s_net { network(transport(udp) port(514)); };' >> /etc/syslog-ng/syslog-ng.conf && \
     echo 'destination d_local { file("/var/log/student.log"); };' >> /etc/syslog-ng/syslog-ng.conf && \
     echo 'log { source(s_net); destination(d_local); };' >> /etc/syslog-ng/syslog-ng.conf
 
-# 3. Create the log file
+# 3. Create the log file with open permissions
 RUN touch /var/log/student.log && chmod 666 /var/log/student.log
 
-# 4. Expose ports
+# 4. Expose Ports
 EXPOSE 514/udp 5000/tcp 80/tcp
 
-# 5. Start Bash (so you can configure IP manually)
+# 5. Start Bash by default
+# This gives you a standard terminal prompt #
 CMD ["/bin/bash"]
