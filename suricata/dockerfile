@@ -1,37 +1,3 @@
-# FROM ubuntu:20.04
-
-# ARG DEBIAN_FRONTEND=noninteractive
-
-# # Install packages: Suricata, SSH, syslog, net-tools
-# RUN apt-get update && \
-#     apt-get install -y --no-install-recommends \
-#       suricata \
-#       suricata-update \
-#       openssh-server \
-#       rsyslog \
-#       net-tools && \
-#     suricata-update && \
-#     rm -rf /var/lib/apt/lists/*
-
-# # create log and run directories
-# RUN mkdir -p /var/log/suricata /var/run/sshd && \
-#     sed -i 's/^#PermitRootLogin .*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
-#     sed -i 's/^#PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
-#     echo 'root:root' | chpasswd
-
-# EXPOSE 514/udp 22/tcp
-
-# # launch ssh only
-# CMD ["/usr/sbin/sshd", "-D"]
-
-# # launch sshd in the background, then run Suricata on eth0
-# # ENTRYPOINT ["/bin/bash", "-c", "/usr/sbin/sshd && exec suricata -c /etc/suricata/suricata.yaml -i eth0"]
-
-# # launch sshd in the foreground and run Suricata on any interface
-# # ENTRYPOINT ["/bin/bash", "-c", "/usr/sbin/sshd -D & exec suricata -c /etc/suricata/suricata.yaml -i any"]
-
-
-
 FROM ubuntu:24.04
 
 # Noninteractive mode for apt
@@ -39,20 +5,20 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Update and install basic packages
 RUN apt-get update && apt-get install -y \
-    sudo \
     openssh-server \
+    rsyslog \
     net-tools \
     iproute2 \
     iputils-ping \
-    rsyslog \
+    tcpdump \
+    vim \
+    nano \
     curl \
     wget \
+    procps \
     gnupg \
     software-properties-common \
-    nano \
-    tcpdump
-    # lsb-release
-    # systemctl
+    && rm -rf /var/lib/apt/lists/*
 
 # Enable IP forwarding
 RUN echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
@@ -64,9 +30,10 @@ RUN add-apt-repository ppa:oisf/suricata-stable -y && \
 
 # SSH setup
 RUN mkdir /var/run/sshd && \
-    echo 'root:toor' | chpasswd && \
+    echo 'root:pass' | chpasswd && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
-    sed -i 's/Port 22/Port 2222/' /etc/ssh/sshd_config
+    sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?UsePAM.*/UsePAM no/' /etc/ssh/sshd_config
 
 # Logging
 RUN touch /var/log/suricata/fast.log  && \
@@ -97,20 +64,6 @@ RUN sed -i 's|default-rule-path: /var/lib/suricata/rules|default-rule-path: /etc
 
 
 # Expose SSH port
-EXPOSE 2222
+EXPOSE 22
 
-# # Run services
-# CMD ["sh", "-c", "sysctl -w net.ipv4.ip_forward=1 && service rsyslog start && service ssh start && suricata -i eth1 -c /etc/suricata/suricata.yaml -D && tail -f /var/log/suricata/fast.log"]
-
-# Run services manually in the foreground
-# CMD ["sh", "-c", "sysctl -w net.ipv4.ip_forward=1 && rsyslogd && /usr/sbin/sshd -D && suricata -i eth1 -c /etc/suricata/suricata.yaml -D && tail -f /var/log/suricata/fast.log"]
-
-# Run services manually in the background
-# CMD ["sh", "-c", "sysctl -w net.ipv4.ip_forward=1 && \
-#     rsyslogd & \
-#     /usr/sbin/sshd -D & \
-#     suricata -i eth1 -c /etc/suricata/suricata.yaml -D & \
-#     tail -f /var/log/suricata/fast.log"]
-    
 CMD ["sh", "-c", "sysctl -w net.ipv4.ip_forward=1 && rsyslogd && service ssh start && suricata -i eth0 -c /etc/suricata/suricata.yaml -D && tail -f /var/log/suricata/fast.log"]
-# sysctl -w net.ipv4.ip_forward=1 && service ssh start && pkill suricata && suricata -i eth1 -c /etc/suricata/suricata.yaml -D && tail -f /var/log/suricata/fast.log
