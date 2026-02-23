@@ -10,14 +10,18 @@ RUN apt-get update && apt-get install -y \
   net-tools \
   iproute2 \
   iputils-ping \
-  nftables \
-  procps \
+  tcpdump \
   vim \
+  nano \
+  curl \
+  wget \
+  procps \
+  nftables \
   && rm -rf /var/lib/apt/lists/*
 
 # SSH setup: root password + allow root/password login
 RUN mkdir /var/run/sshd && \
-    echo 'root:root' | chpasswd && \
+    echo 'root:pass' | chpasswd && \
     sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
     sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
     sed -i 's/^#\?UsePAM.*/UsePAM no/' /etc/ssh/sshd_config
