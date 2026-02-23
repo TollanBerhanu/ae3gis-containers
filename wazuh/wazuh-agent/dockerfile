@@ -1,9 +1,22 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y \
-    curl gnupg lsb-release sudo vim net-tools iputils-ping rsyslog openssh-server \
+    openssh-server \
+    rsyslog \
+    net-tools \
+    iproute2 \
+    iputils-ping \
+    tcpdump \
+    vim \
+    nano \
+    curl \
+    wget \
+    procps \
+    gnupg \
+    lsb-release \
+    sudo \
     && rm -rf /var/lib/apt/lists/*
 
 RUN curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | apt-key add - && \
@@ -11,7 +24,11 @@ RUN curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | apt-key add - && \
     apt-get update && apt-get install -y wazuh-agent && \
     rm -rf /var/lib/apt/lists/*
 
-RUN mkdir /var/run/sshd && echo 'root:root' | chpasswd
+RUN mkdir /var/run/sshd && \
+    echo 'root:pass' | chpasswd && \
+    sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?UsePAM.*/UsePAM no/' /etc/ssh/sshd_config
 RUN echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
 
 EXPOSE 22
