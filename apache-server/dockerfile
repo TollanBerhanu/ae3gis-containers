@@ -1,0 +1,46 @@
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install Apache and common tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    apache2 \
+    rsyslog \
+    openssh-server \
+    net-tools \
+    iproute2 \
+    iputils-ping \
+    tcpdump \
+    vim \
+    nano \
+    curl \
+    wget \
+    procps \
+  && rm -rf /var/lib/apt/lists/*
+
+# SSH setup: root password + allow root/password login
+RUN mkdir /var/run/sshd && \
+    echo 'root:pass' | chpasswd && \
+    sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?UsePAM.*/UsePAM no/' /etc/ssh/sshd_config
+
+# Apache configuration: set ServerName to avoid warnings, enable rewrite, allow .htaccess
+RUN echo 'ServerName localhost' > /etc/apache2/conf-available/servername.conf && \
+    a2enconf servername && \
+    a2enmod rewrite && \
+    sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
+
+# Default document root and simple index page
+ENV APACHE_DOCUMENT_ROOT=/var/www/html
+RUN echo '<!doctype html>\n<html>\n  <head>\n    <meta charset="utf-8"/>\n    <title>Apache is running</title>\n    <style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,sans-serif;padding:2rem;max-width:60ch;margin:auto;line-height:1.5}code{background:#f3f3f3;padding:.2rem .4rem;border-radius:.25rem}</style>\n  </head>\n  <body>\n    <h1>Apache HTTP Server</h1>\n    <p>Your container is up. Place your site files in <code>${APACHE_DOCUMENT_ROOT}</code> or mount a volume there.</p>\n  </body>\n</html>' > "$APACHE_DOCUMENT_ROOT/index.html"
+
+# Expose HTTP and SSH
+EXPOSE 80 22
+
+# Healthcheck for Apache
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD curl -fsS http://127.0.0.1:80/ >/dev/null || exit 1
+
+# Start rsyslog, SSH (in background), then run Apache in the foreground
+CMD ["sh", "-c", "rsyslogd && /usr/sbin/sshd -D & exec apache2ctl -D FOREGROUND"]
+
