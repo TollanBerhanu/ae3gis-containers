@@ -22,8 +22,8 @@ Most images share a **common baseline**:
 | Tool | Minimum Version | Notes |
 |---|---|---|
 | [Docker](https://docs.docker.com/get-docker/) | 20.10+ | Used to build the images |
-| [GNS3](https://www.gns3.com/software/download) | 2.2+ | Network simulation environment |
-| GNS3 VM **or** a local GNS3 server | — | Required for running Docker containers inside GNS3 |
+| [GNS3 Server](https://www.gns3.com/software/download) | 2.2+ | Network simulation environment |
+<!-- | GNS3 VM **or** a local GNS3 server | — | Required for running Docker containers inside GNS3 | -->
 
 Make sure the GNS3 server (or GNS3 VM) has Docker available. If you are running GNS3 on Windows or macOS, the GNS3 VM is the easiest way to get Docker support.
 
@@ -40,7 +40,7 @@ docker build -t ae3gis-nftables     ./nftables/
 
 You can name the images however you like; the `ae3gis-` prefix is just a convention used here.
 
-### 2. (Optional) Test locally with Docker
+### 2. Test locally with Docker
 
 ```bash
 # Run the benign client interactively
@@ -70,31 +70,7 @@ ssh root@<container_ip>
 # Password: pass
 ```
 
-### 4. Build a topology
-
-Wire together any combination of the containers in this repo. For example:
-
-```
-Benign Client ──┐
-                ├── Switch ── nftables Firewall ── Suricata IDS ── Apache Server
-Malicious Client┘
-```
-
-Each container's README describes its specific services, ports, and configuration files.
-
-## Repository Layout
-
-Containers are grouped by role. Refer to the README inside each folder for full details.
-
-| Category | Containers | Description |
-|---|---|---|
-| **Clients** | `benign-client`, `malicious-client` | Normal and offensive network endpoints |
-| **Firewalls** | `firehol`, `iptables`, `nftables` | Packet filtering and NAT |
-| **Web Servers** | `apache-server`, `nginx-server` | HTTP servers with default pages |
-| **Network Services** | `ftp-server`, `isc-dhcp-server`, `smb` | FTP, DHCP, and a deliberately vulnerable Samba server |
-| **Intrusion Detection** | `snort2`, `snort3`, `suricata`, `zeek` | Network IDS/IPS and security monitoring |
-| **Endpoint Security** | `wazuh/wazuh-agent`, `wazuh/wazuh-manager` | Host-based intrusion detection and SIEM |
-| **SCADA / ICS** | `openplc`, `scadabr` | Industrial control system components (experimental) |
+> Each container's README describes its specific services, ports, and configuration files.
 
 ## Standardized Configuration
 
@@ -105,14 +81,7 @@ Almost every container follows the same conventions so that your lab experience 
 - **Common networking tools** (`ping`, `ip`, `tcpdump`, `curl`, etc.) are pre-installed.
 - **IPv4 forwarding** is enabled on containers that act as routers or firewalls.
 
-> ⚠️ These defaults are intentionally insecure for lab convenience. **Never** reuse them outside of an isolated lab environment.
-
-## Security Considerations
-
-- Several containers ship with **intentionally vulnerable** software (e.g. the Samba container runs a version affected by EternalBlue).
-- The `malicious-client` image includes penetration testing tools (`nmap`, `hydra`, `john`, etc.).
-- **Use these images only in isolated, controlled environments** — never on production networks.
-- Always comply with applicable laws and your organization's acceptable-use policies.
+> These defaults are intentionally insecure for lab convenience. **Never** reuse them outside of an isolated lab environment.
 
 ## Contributing
 
