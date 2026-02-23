@@ -1,0 +1,72 @@
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install basic Ubuntu packages + build dependencies
+RUN apt-get update && apt-get install -y \
+    openssh-server \
+    rsyslog \
+    net-tools \
+    iproute2 \
+    iputils-ping \
+    tcpdump \
+    vim \
+    nano \
+    curl \
+    wget \
+    procps \
+    build-essential \
+    autotools-dev \
+    libpcap-dev \
+    libpcre3-dev \
+    libpcre2-dev \
+    libdumbnet-dev \
+    bison \
+    flex \
+    zlib1g-dev \
+    liblzma-dev \
+    openssl \
+    libssl-dev \
+    libnghttp2-dev \
+    libhwloc-dev \
+    cmake \
+    libluajit-5.1-dev \
+    libunwind-dev \
+    libmnl-dev \
+    ethtool \
+    libnuma-dev \
+    libcurl4-openssl-dev \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# SSH setup: root password + allow root/password login
+RUN mkdir /var/run/sshd && \
+    echo 'root:pass' | chpasswd && \
+    sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?UsePAM.*/UsePAM no/' /etc/ssh/sshd_config
+
+# Install DAQ and dependencies
+WORKDIR /opt
+RUN git clone https://github.com/snort3/libdaq.git && \
+    cd libdaq && ./bootstrap && ./configure && make && make install
+
+# Install Snort 3
+RUN git clone https://github.com/snort3/snort3.git && \
+    cd snort3 && ./configure_cmake.sh --prefix=/usr/local && \
+    cd build && make -j$(nproc) && make install
+
+# Add Snort to PATH
+ENV PATH="/usr/local/bin:$PATH"
+
+# Setup library path
+RUN echo "/usr/local/lib" > /etc/ld.so.conf.d/snort3.conf && ldconfig
+
+# Setup Snort log directory
+RUN mkdir -p /var/log/snort
+
+# Expose SSH port
+EXPOSE 22
+
+# Start services: rsyslog and sshd
+CMD ["sh", "-c", "rsyslogd && exec /usr/sbin/sshd -D"]
