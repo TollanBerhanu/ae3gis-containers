@@ -10,7 +10,7 @@ This container provides a standard Ubuntu client with basic networking tools for
 - DNS tools
 - Network scanning tools (nmap, netcat)
 - Logging enabled (rsyslog)
- - Traffic scripts for ping, nmap, HTTP, and FTP (2s interval by default)
+- Traffic scripts for ping, nmap, HTTP, and FTP (2-second interval by default)
 
 ## Installed Packages
 - **SSH**: openssh-server
