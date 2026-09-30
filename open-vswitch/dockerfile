@@ -1,0 +1,31 @@
+# Dockerfile
+FROM ubuntu:24.04
+
+# Runtime settings read by docker-entrypoint.sh:
+#   BRIDGE_NAME    bridge to create
+#   EXCLUDE_PORTS  space-separated ethN interfaces to keep off the bridge (every other ethN is attached)
+#   OF_PROTOCOLS   OpenFlow versions the bridge accepts
+#   CONTROLLER     optional OpenFlow controller target, e.g. tcp:10.0.0.10:6653
+#   DATAPATH_TYPE  auto | system (needs openvswitch kernel module on the host) | netdev (userspace)
+#   OVSDB_REMOTE   extra ovsdb-server listener for remote management; empty disables it
+ENV DEBIAN_FRONTEND=noninteractive \
+    BRIDGE_NAME=br0 \
+    EXCLUDE_PORTS= \
+    OF_PROTOCOLS=OpenFlow10,OpenFlow13 \
+    CONTROLLER= \
+    DATAPATH_TYPE=auto \
+    OVSDB_REMOTE=ptcp:6640
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      openvswitch-switch openvswitch-common \
+      iproute2 iputils-ping tcpdump ethtool net-tools \
+      tini ca-certificates jq procps && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+HEALTHCHECK --interval=20s --timeout=5s --start-period=10s --retries=3 CMD \
+  ovs-appctl -t ovs-vswitchd version >/dev/null && ovs-vsctl br-exists "$BRIDGE_NAME" || exit 1
+
+ENTRYPOINT ["/usr/bin/tini","--","/usr/local/bin/docker-entrypoint.sh"]
