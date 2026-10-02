@@ -16,6 +16,14 @@ LOGDIR=/var/log/openvswitch
 
 mkdir -p "$RUNDIR" "$LOGDIR" /etc/openvswitch
 
+# The userspace datapath creates the bridge's own port as a tap device, through
+# /dev/net/tun. Docker allows that device (char 10:200) but only adds it when
+# asked (--device); without it OVS fails with "failed to create bridge". Make it.
+if [ ! -c /dev/net/tun ]; then
+  mkdir -p /dev/net
+  mknod /dev/net/tun c 10 200 || echo "WARN: cannot create /dev/net/tun; the netdev datapath will fail" >&2
+fi
+
 # Create DB if missing; upgrade one written by an older OVS version
 if [ ! -f "$DB" ]; then
   ovsdb-tool create "$DB" "$SCHEMA"
