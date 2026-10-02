@@ -3,20 +3,27 @@ FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install basic Ubuntu packages
-RUN apt-get update && apt-get install -y \
+# Install basic Ubuntu packages + Python
+# (python3-venv bundles pip; python3-pip is skipped since it recommends the full gcc toolchain)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    python3 \
+    python3-venv \
+    python-is-python3 \
     openssh-server \
     rsyslog \
     net-tools \
     iproute2 \
     iputils-ping \
+    traceroute \
+    telnet \
     tcpdump \
     vim \
     nano \
     curl \
     wget \
     procps \
-    dnsutils \
+    bind9-dnsutils \
     nmap \
     netcat-openbsd \
     isc-dhcp-client \

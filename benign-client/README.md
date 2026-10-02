@@ -10,16 +10,18 @@ This container provides a standard Ubuntu client with basic networking tools for
 - DNS tools
 - Network scanning tools (nmap, netcat)
 - Logging enabled (rsyslog)
+- Python 3 with venv for ad-hoc scripting
 - Traffic scripts for ping, nmap, HTTP, and FTP (2-second interval by default)
 
 ## Installed Packages
 - **SSH**: openssh-server
 - **Logging**: rsyslog
-- **Network Tools**: net-tools, iproute2, iputils-ping, tcpdump
+- **Network Tools**: net-tools, iproute2, iputils-ping, traceroute, telnet, tcpdump, isc-dhcp-client
 - **Text Editors**: vim, nano
-- **Utilities**: curl, wget, procps
-- **DNS**: dnsutils
+- **Utilities**: curl, wget, procps, ca-certificates
+- **DNS**: bind9-dnsutils (`dig`, `nslookup`)
 - **Security Tools**: nmap, netcat-openbsd
+- **Python**: python3, python3-venv (`python` points to `python3`)
 
 ## Usage in GNS3
 
@@ -78,6 +80,13 @@ All scripts accept target parameters and run continuously with a default 2-secon
 
 # FTP list and upload test file repeatedly
 ./run_ftp.sh <server_ip> <username> [password] [interval_seconds]
+```
+
+### Python
+Ubuntu 24.04 blocks system-wide `pip install` (PEP 668), so install packages into a virtual environment:
+```bash
+python3 -m venv ~/venv
+~/venv/bin/pip install <package>
 ```
 
 ### Logging
