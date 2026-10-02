@@ -18,12 +18,16 @@ RUN apk add --no-cache \
 RUN mkdir ~/.vnc
 RUN x11vnc -storepasswd gns3 ~/.vnc/passwd
 
+# The display every X client below uses
+ENV DISPLAY=:0
+
 # CMD Breakdown:
-# 1. Xvfb: Starts the virtual display
+# 1. Xvfb: Starts the virtual display, then waits (up to 10 s) until it accepts clients
 # 2. fluxbox: Starts the window manager
 # 3. x11vnc: Starts VNC with "-usepw" (Use Password)
 # 4. firefox: Starts the browser
 CMD Xvfb :0 -screen 0 1024x768x24 & \
+    for i in $(seq 50); do [ -e /tmp/.X11-unix/X0 ] && break; sleep 0.2; done; \
     fluxbox & \
     x11vnc -display :0 -usepw -forever & \
     firefox
