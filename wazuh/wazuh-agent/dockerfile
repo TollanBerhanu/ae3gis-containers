@@ -33,4 +33,6 @@ RUN echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
 
 EXPOSE 22
 
-CMD service ssh start && tail -f /var/ossec/logs/ossec.log
+# The agent is started by hand once it knows its manager (see README), so its
+# log may not exist yet: tail -F waits for it instead of exiting.
+CMD service ssh start && exec tail -F /var/ossec/logs/ossec.log
