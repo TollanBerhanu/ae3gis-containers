@@ -10,3 +10,14 @@ RUN apt-get update && apt-get install -y \
 RUN git clone https://github.com/ScadaBR/ScadaBR_Installer.git
 
 EXPOSE 8080
+
+# AE3GIS image metadata (see image-standard.md).
+# NOTE: this Dockerfile only clones the installer; ScadaBR's install is
+# interactive, so a complete image is produced by finishing the install in a
+# running container and committing it (see README). It is intentionally NOT in
+# images.tsv, since scripts/publish.sh can only build reproducible Dockerfiles.
+LABEL org.opencontainers.image.title="ScadaBR" \
+      org.opencontainers.image.description="ScadaBR SCADA/HMI (installer clone; complete the install and commit, see README)." \
+      io.ae3gis.schema="1" \
+      io.ae3gis.type="hmi" \
+      io.ae3gis.stability="experimental"
