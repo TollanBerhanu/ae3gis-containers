@@ -44,3 +44,8 @@ HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD curl -fsS http://127.0.0
 # Start rsyslog, SSH (in background), then run Apache in the foreground
 CMD ["sh", "-c", "rsyslogd && /usr/sbin/sshd -D & exec apache2ctl -D FOREGROUND"]
 
+# AE3GIS image metadata (see image-standard.md)
+LABEL org.opencontainers.image.title="Apache" \
+      org.opencontainers.image.description="Ubuntu 24.04 + Apache 2 serving /var/www/html; SSH root/pass." \
+      io.ae3gis.schema="1" \
+      io.ae3gis.type="web-server"
