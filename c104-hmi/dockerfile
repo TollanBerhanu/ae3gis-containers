@@ -1,0 +1,52 @@
+# IEC-104 operator console (HMI) built on the c104 library. Scenario B.
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Common baseline + SSH + Python
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssh-server \
+    rsyslog \
+    iproute2 \
+    iputils-ping \
+    net-tools \
+    tcpdump \
+    curl \
+    wget \
+    vim \
+    nano \
+    procps \
+    ca-certificates \
+    python3 \
+    python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+# c104 (IEC-104) + Flask for the browser view, in a venv
+RUN python3 -m venv /opt/venv && \
+    /opt/venv/bin/pip install --no-cache-dir c104 flask
+ENV PATH="/opt/venv/bin:$PATH"
+
+# SSH setup: root password + allow root/password login (lab-only, deliberate)
+RUN mkdir /var/run/sshd && \
+    echo 'root:pass' | chpasswd && \
+    sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?UsePAM.*/UsePAM no/' /etc/ssh/sshd_config
+
+COPY app/hmi.py /opt/app/hmi.py
+
+# Point this at the RTU at runtime (default matches the c104-server image)
+ENV IEC104_SERVER=c104-server \
+    IEC104_PORT=2404
+
+EXPOSE 22 8080
+
+# Start logging + SSH in the background, then run the HMI (Flask) in the foreground.
+CMD ["sh", "-c", "rsyslogd; service ssh start; exec python3 /opt/app/hmi.py"]
+
+# AE3GIS image metadata (see image-standard.md)
+LABEL org.opencontainers.image.title="IEC-104 HMI" \
+      org.opencontainers.image.description="Ubuntu 24.04 IEC-104 operator console (c104 + Flask): shows and controls the RTU breaker on a web page (8080). SSH root/pass." \
+      io.ae3gis.schema="1" \
+      io.ae3gis.type="hmi" \
+      io.ae3gis.stability="experimental"
