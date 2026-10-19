@@ -36,3 +36,9 @@ RUN echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf
 
 # Start services: apply sysctl settings, start rsyslog, and run sshd
 CMD ["sh", "-c", "sysctl -p && rsyslogd && exec /usr/sbin/sshd -D"]
+
+# AE3GIS image metadata (see image-standard.md)
+LABEL org.opencontainers.image.title="iptables" \
+      org.opencontainers.image.description="Ubuntu 24.04 + iptables, forwarding enabled, no rules loaded." \
+      io.ae3gis.schema="1" \
+      io.ae3gis.type="firewall"
