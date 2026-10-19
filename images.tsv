@@ -1,0 +1,19 @@
+# Images published to Docker Hub as <namespace>/<folder>:<version> and :latest
+# (see "Publishing to Docker Hub" in README.md). Bump the version to publish a
+# change: scripts/publish.sh never overwrites a version that is already on Hub.
+#
+# folder           version  platforms
+benign-client      v0.8     linux/amd64,linux/arm64
+malicious-client   v0.6     linux/amd64,linux/arm64
+apache-server      v0.2     linux/amd64,linux/arm64
+nginx-server       v0.3     linux/amd64,linux/arm64
+ftp-server         v0.2     linux/amd64,linux/arm64
+iptables           v0.6     linux/amd64,linux/arm64
+nftables           v0.1     linux/amd64,linux/arm64
+open-vswitch       v0.1     linux/amd64,linux/arm64
+# ICS lab images
+mariadb            v0.1     linux/amd64,linux/arm64
+c104-server        v0.1     linux/amd64,linux/arm64
+c104-hmi           v0.1     linux/amd64,linux/arm64
+process-sim        v0.1     linux/amd64,linux/arm64
+zeek               v0.1     linux/amd64,linux/arm64

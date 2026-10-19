@@ -83,6 +83,27 @@ Almost every container follows the same conventions so that your lab experience 
 
 > These defaults are intentionally insecure for lab convenience. **Never** reuse them outside of an isolated lab environment.
 
+## Publishing to Docker Hub
+
+Working images are published to Docker Hub so AE3GIS can load them from a registry (**Images → Add registry** → `https://hub.docker.com/u/tollan`). [`image-standard.md`](./image-standard.md) defines what AE3GIS reads; this repo follows it with these conventions:
+
+| Item | Convention |
+|---|---|
+| Image ref | `tollan/<folder>`: the repo is named after the image's folder (e.g. `tollan/nginx-server`) |
+| Tags | Each publish pushes the next `vX.Y` **and** `latest`. AE3GIS reads `latest`; a `vX.Y` tag is never overwritten, so pin one for a fixed image |
+| Labels | A `LABEL` block at the end of the Dockerfile: `io.ae3gis.schema="1"`, `io.ae3gis.type` (an AE3GIS node type), `org.opencontainers.image.title` and `.description`, plus `io.ae3gis.stability` / `io.ae3gis.own-bridge` where needed |
+| Hub description | `[ae3gis] <title>`: the marker AE3GIS looks for. The folder's README becomes the repo overview |
+| Platforms | `linux/amd64` and `linux/arm64` |
+
+[`images.tsv`](./images.tsv) lists what is published (folder, version, platforms). To publish an image, add its labels, add or bump its row, then run:
+
+```bash
+scripts/publish.sh [folder...]            # build both platforms, push <version> and latest, check the labels
+scripts/publish.sh describe [folder...]   # set "[ae3gis] <title>" and the overview on Docker Hub
+```
+
+No folder means every row. Publishing uses your `docker login`; `describe` needs a Docker Hub personal access token with *Read, Write, Delete* scope, taken from `DOCKERHUB_TOKEN` or asked for. Set `HUB_NAMESPACE` to publish under another namespace.
+
 ## Contributing
 
 Contributions are welcome — bug fixes, new containers, documentation improvements, and more. Please open an issue or a pull request.
