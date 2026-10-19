@@ -2,7 +2,7 @@ FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install essential dependencies
+# Baseline + build toolchain for Spicy-based ICS analyzers (zkg compiles them)
 RUN apt-get update && apt-get install -y \
     openssh-server \
     rsyslog \
@@ -19,24 +19,42 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     software-properties-common \
     sudo \
+    git \
+    cmake \
+    g++ \
+    make \
+    python3 \
     && rm -rf /var/lib/apt/lists/*
 
-# Add Zeek repository for Ubuntu 22.04
-RUN echo 'deb http://download.opensuse.org/repositories/security:/zeek/xUbuntu_22.04/ /' \
+# Zeek repository for Ubuntu 24.04 (serves both amd64 and arm64)
+RUN echo 'deb http://download.opensuse.org/repositories/security:/zeek/xUbuntu_24.04/ /' \
     | tee /etc/apt/sources.list.d/security:zeek.list \
-    && curl -fsSL https://download.opensuse.org/repositories/security:zeek/xUbuntu_22.04/Release.key \
+    && curl -fsSL https://download.opensuse.org/repositories/security:zeek/xUbuntu_24.04/Release.key \
     | gpg --dearmor | tee /etc/apt/trusted.gpg.d/zeek_oss_repo.gpg > /dev/null
 
-# Install Zeek from the repository
+# Zeek LTS + the dev/spicy packages zkg needs to build analyzers
 RUN apt-get update && apt-get install -y \
-    zeek-6.0 \
-    zeek-6.0-core \
-    zeekctl-6.0
+    zeek-lts \
+    zeek-lts-core \
+    zeekctl-lts \
+    zeek-lts-core-dev \
+    zeek-lts-spicy-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Add Zeek to PATH (Zeek installs under /opt/zeek‑6.0)
+# Zeek installs under /opt/zeek
 ENV PATH="/opt/zeek/bin:$PATH"
 
-# Configure SSH
+# ICS protocol analyzers via zkg (ships with Zeek).
+#  - Modbus (Scenario A): cisagov ICSNPP, installed and loaded.
+#  - IEC-104 (Scenario B): the community Spicy analyzers (DINA-community and
+#    georgemakrakis) target Spicy <=1.10 / Zeek <=6.2 and do NOT compile against
+#    this Zeek LTS (8.0 / Spicy 1.14). Left out until an updated analyzer exists;
+#    to add one, `zkg install <git-url>` at build time once it supports Spicy 1.14.
+RUN zkg autoconfig && \
+    zkg install --force --skiptests cisagov/icsnpp-modbus && \
+    echo '@load packages' >> /opt/zeek/share/zeek/site/local.zeek
+
+# Configure SSH (lab-only, deliberate)
 RUN mkdir /var/run/sshd \
     && echo 'root:pass' | chpasswd \
     && sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config \
@@ -48,4 +66,13 @@ RUN echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf
 
 EXPOSE 22
 
-CMD ["sh", "-c", "service rsyslog start && service ssh start && bash"]
+# Start logging + SSH, then stay in the foreground. Zeek itself is run against an
+# interface on demand (topology layer), so the image only needs to stay up.
+CMD ["sh", "-c", "rsyslogd; service ssh start; exec sleep infinity"]
+
+# AE3GIS image metadata (see image-standard.md)
+LABEL org.opencontainers.image.title="Zeek" \
+      org.opencontainers.image.description="Ubuntu 24.04 + Zeek (LTS) network security monitor with the ICSNPP Modbus analyzer. SSH root/pass." \
+      io.ae3gis.schema="1" \
+      io.ae3gis.type="ids" \
+      io.ae3gis.stability="experimental"
