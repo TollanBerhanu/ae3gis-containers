@@ -48,3 +48,9 @@ RUN chmod +x /usr/local/bin/run_*.sh
 
 # Start services: rsyslog and sshd
 CMD ["sh", "-c", "rsyslogd && exec /usr/sbin/sshd -D"]
+
+# AE3GIS image metadata (see image-standard.md)
+LABEL org.opencontainers.image.title="Benign client" \
+      org.opencontainers.image.description="Ubuntu 24.04 client with traffic generators (run_ping.sh, run_http.sh, run_ftp.sh, run_nmap.sh)." \
+      io.ae3gis.schema="1" \
+      io.ae3gis.type="workstation"
