@@ -1,0 +1,54 @@
+# MariaDB datastore + OT client libs — the lab's dual-homed historian/pivot.
+# Named for the software (MariaDB); its lab role is in the AE3GIS metadata below.
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Common baseline + SSH, MariaDB, OT recon tools, and Python for the client libs
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssh-server \
+    rsyslog \
+    iproute2 \
+    iputils-ping \
+    net-tools \
+    tcpdump \
+    curl \
+    wget \
+    vim \
+    nano \
+    procps \
+    ca-certificates \
+    mariadb-server \
+    nmap \
+    netcat-openbsd \
+    python3 \
+    python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+# OT client libraries in a venv (Ubuntu 24.04 blocks system-wide pip, PEP 668).
+# pymodbus (Scenario A) and c104 / IEC-104 (Scenario B) so one image fits either topology.
+RUN python3 -m venv /opt/venv && \
+    /opt/venv/bin/pip install --no-cache-dir pymodbus c104
+ENV PATH="/opt/venv/bin:$PATH"
+
+# SSH setup: root password + allow root/password login (lab-only, deliberate)
+RUN mkdir /var/run/sshd && \
+    echo 'root:pass' | chpasswd && \
+    sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?UsePAM.*/UsePAM no/' /etc/ssh/sshd_config
+
+# This node is a pivot, not a router: IP forwarding is left off by design.
+
+EXPOSE 22 3306
+
+# Start logging, SSH, and MariaDB; then stay in the foreground. In Kathará the
+# real startup is driven from the topology layer, so this only needs to stay up.
+CMD ["sh", "-c", "rsyslogd; service ssh start; service mariadb start; exec sleep infinity"]
+
+# AE3GIS image metadata (see image-standard.md)
+LABEL org.opencontainers.image.title="MariaDB" \
+      org.opencontainers.image.description="Ubuntu 24.04 + MariaDB, with pymodbus and c104 (IEC-104) OT client libraries; dual-homed historian/pivot. SSH root/pass." \
+      io.ae3gis.schema="1" \
+      io.ae3gis.type="database-server" \
+      io.ae3gis.stability="experimental"
