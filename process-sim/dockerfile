@@ -1,0 +1,55 @@
+# Physical-process simulator + projector web view. Reads the field device's
+# true output over Modbus (Scenario A) or IEC-104 (Scenario B), selected by env.
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Common baseline + SSH + Python
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssh-server \
+    rsyslog \
+    iproute2 \
+    iputils-ping \
+    net-tools \
+    tcpdump \
+    curl \
+    wget \
+    vim \
+    nano \
+    procps \
+    ca-certificates \
+    python3 \
+    python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+# Flask (web view) + both OT client libs so one image handles either scenario
+RUN python3 -m venv /opt/venv && \
+    /opt/venv/bin/pip install --no-cache-dir flask pymodbus c104
+ENV PATH="/opt/venv/bin:$PATH"
+
+# SSH setup: root password + allow root/password login (lab-only, deliberate)
+RUN mkdir /var/run/sshd && \
+    echo 'root:pass' | chpasswd && \
+    sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?UsePAM.*/UsePAM no/' /etc/ssh/sshd_config
+
+COPY app/sim.py /opt/app/sim.py
+
+# Scenario selection and field-device target (overridable at runtime):
+#   SIM_PROTO=modbus  -> read FIELD_HOST:502 (OpenPLC)   [Scenario A]
+#   SIM_PROTO=iec104  -> read FIELD_HOST:2404 (IEC-104 RTU) [Scenario B]
+ENV SIM_PROTO=modbus \
+    FIELD_HOST=openplc
+
+EXPOSE 22 8000
+
+# Start logging + SSH in the background, then run the simulator (Flask) foreground.
+CMD ["sh", "-c", "rsyslogd; service ssh start; exec python3 /opt/app/sim.py"]
+
+# AE3GIS image metadata (see image-standard.md)
+LABEL org.opencontainers.image.title="Process simulator" \
+      org.opencontainers.image.description="Ubuntu 24.04 physical-process simulator + projector view (Flask on 8000); reads the field device over Modbus or IEC-104. SSH root/pass." \
+      io.ae3gis.schema="1" \
+      io.ae3gis.type="workstation" \
+      io.ae3gis.stability="experimental"
