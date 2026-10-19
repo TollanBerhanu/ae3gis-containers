@@ -37,3 +37,9 @@ EXPOSE 22
 
 # Start services: apply sysctl settings, start rsyslog, load nftables, and run sshd
 CMD ["sh", "-c", "sysctl -p && rsyslogd && nft -f /etc/nftables.conf && exec /usr/sbin/sshd -D"]
+
+# AE3GIS image metadata (see image-standard.md)
+LABEL org.opencontainers.image.title="nftables" \
+      org.opencontainers.image.description="Ubuntu 24.04 + nftables. Ships a default-drop ruleset: forwarded traffic is blocked until you add rules." \
+      io.ae3gis.schema="1" \
+      io.ae3gis.type="firewall"
