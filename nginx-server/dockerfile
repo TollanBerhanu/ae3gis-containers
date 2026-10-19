@@ -43,4 +43,8 @@ HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD curl -fsS http://127.0.0
 # Start rsyslog, SSH (in background), then run Nginx in the foreground
 CMD ["sh", "-c", "rsyslogd && /usr/sbin/sshd -D & exec nginx -g 'daemon off;' "]
 
-
+# AE3GIS image metadata (see image-standard.md)
+LABEL org.opencontainers.image.title="Nginx" \
+      org.opencontainers.image.description="Ubuntu 24.04 + Nginx serving /var/www/html; SSH root/pass." \
+      io.ae3gis.schema="1" \
+      io.ae3gis.type="web-server"
