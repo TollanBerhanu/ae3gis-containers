@@ -16,7 +16,7 @@ This container provides a Ubuntu client with penetration testing and security as
 - **Network Tools**: net-tools, iproute2, iputils-ping, tcpdump
 - **Text Editors**: vim, nano
 - **Utilities**: curl, wget, procps
-- **Penetration Testing**: nmap, netcat-openbsd, hydra, john
+- **Penetration Testing**: nmap, netcat-openbsd, hydra, john, sshpass
 
 ## Usage in GNS3
 

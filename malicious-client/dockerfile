@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y \
     procps \
     nmap \
     netcat-openbsd \
+    sshpass \
     hydra \
     john \
     isc-dhcp-client \
@@ -38,6 +39,6 @@ CMD ["sh", "-c", "rsyslogd && exec /usr/sbin/sshd -D"]
 
 # AE3GIS image metadata (see image-standard.md)
 LABEL org.opencontainers.image.title="Attack toolkit" \
-      org.opencontainers.image.description="Ubuntu 24.04 with nmap, hydra, john and netcat." \
+      org.opencontainers.image.description="Ubuntu 24.04 with nmap, hydra, john, netcat and sshpass (for the credential-reuse pivot)." \
       io.ae3gis.schema="1" \
       io.ae3gis.type="attacker"
