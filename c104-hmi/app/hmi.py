@@ -2,8 +2,8 @@
 """IEC-104 operator console (HMI) for the AE3GIS lab (Scenario B).
 
 Connects to the RTU (the c104-server image) as an IEC-104 client, tracks the
-breaker state via periodic general interrogation, and serves a minimal web page
-on :8080 that shows the state and offers open/close controls.
+breaker state via periodic general interrogation, and serves a small web console
+on :8080 that shows the breaker state and offers open/close controls.
 
 The c104 client setup runs in a retrying background thread (c104 needs a numeric
 IP, and the RTU may not be up yet), so the web view always stays up. Educational,
@@ -59,18 +59,79 @@ threading.Thread(target=worker, daemon=True).start()
 
 app = Flask(__name__)
 
-PAGE = """<!doctype html><html><head><meta charset="utf-8">
-<title>IEC-104 HMI</title><meta http-equiv="refresh" content="3">
-<style>body{{font-family:system-ui,sans-serif;max-width:40ch;margin:3rem auto;text-align:center}}
-.state{{font-size:2rem;font-weight:700;padding:1rem;border-radius:.5rem;margin:1rem 0}}
-.closed{{background:#1b5e20;color:#fff}}.open{{background:#b71c1c;color:#fff}}
-.unknown{{background:#555;color:#fff}}button{{font-size:1rem;padding:.6rem 1.4rem;margin:.3rem}}</style>
-</head><body><h1>Substation breaker</h1>
-<div class="state {cls}">{label}</div>
-<form method="post" action="/close"><button>Close</button></form>
-<form method="post" action="/open"><button>Open</button></form>
-<p><small>RTU {server}:{port} · {conn}</small></p>
-</body></html>"""
+# A small dark console: one clear state panel and the open/close controls.
+# No external assets (the page is relayed through the backend's web-UI proxy),
+# so styling is inline. Dynamic values are substituted with str.replace to keep
+# the CSS brace-free.
+PAGE = """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Substation Breaker</title>
+<meta http-equiv="refresh" content="2">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+    background:#0b1118;color:#dfe8f3;font-family:"Segoe UI",system-ui,-apple-system,sans-serif}
+  .card{width:100%;max-width:300px;background:#121a24;border:1px solid #223042;border-radius:14px;
+    padding:20px;text-align:center;box-shadow:0 16px 44px rgba(0,0,0,.5)}
+  .title{font-size:11px;color:#7d8ea3;text-transform:uppercase;letter-spacing:.18em;font-weight:700}
+  .panel{margin:16px 0;padding:22px 16px;border-radius:12px;border:1px solid var(--c);
+    background:var(--bg);display:flex;flex-direction:column;align-items:center;gap:8px}
+  .panel svg{width:40px;height:40px}
+  .label{font-size:26px;font-weight:800;letter-spacing:.06em;color:var(--c)}
+  .sub{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#7d8ea3}
+  .p-closed{--c:#2fd27a;--bg:rgba(47,210,122,.10)}
+  .p-open{--c:#ff5a5a;--bg:rgba(255,90,90,.10)}
+  .p-unknown{--c:#9fb0c3;--bg:rgba(125,142,163,.08)}
+  .controls{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  button{font:inherit;font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;
+    padding:11px;border-radius:9px;border:1px solid #223042;color:#dfe8f3;background:#182230;
+    transition:filter .12s,transform .02s}
+  button:hover{filter:brightness(1.16)}
+  button:active{transform:translateY(1px)}
+  .btn-close{border-color:rgba(47,210,122,.4);color:#8ff0c0;background:#132a20}
+  .btn-open{border-color:rgba(255,90,90,.4);color:#ffb0b0;background:#2a1417}
+  form{margin:0}
+  .foot{margin-top:14px;font-size:10px;color:#6b7a90;font-family:"Consolas",ui-monospace,monospace;letter-spacing:.03em}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="title">Substation Breaker · CB-52</div>
+    <div class="panel p-__DKEY__">
+      __GLYPH__
+      <div class="label">__LABEL__</div>
+      <div class="sub">__SUB__</div>
+    </div>
+    <div class="controls">
+      <form method="post" action="/close"><button class="btn-close" type="submit" style="width:100%">Close</button></form>
+      <form method="post" action="/open"><button class="btn-open" type="submit" style="width:100%">Open</button></form>
+    </div>
+    <div class="foot">RTU __CONN__ · __TS__</div>
+  </div>
+</body>
+</html>"""
+
+
+def _glyph(state: str) -> str:
+    """A small breaker-contact symbol: closed = contacts joined, open = parted."""
+    c = {"closed": "#2fd27a", "open": "#ff5a5a", "unknown": "#9fb0c3"}[state]
+    if state == "closed":
+        contact = f'<line x1="24" y1="14" x2="24" y2="34" stroke="{c}" stroke-width="3.5" stroke-linecap="round"/>'
+    elif state == "open":
+        contact = f'<line x1="24" y1="14" x2="12" y2="26" stroke="{c}" stroke-width="3.5" stroke-linecap="round"/>'
+    else:
+        contact = f'<line x1="24" y1="14" x2="15" y2="25" stroke="{c}" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="3 3"/>'
+    return (
+        f'<svg viewBox="0 0 48 48" role="img" aria-hidden="true">'
+        f'<line x1="24" y1="2" x2="24" y2="14" stroke="{c}" stroke-width="3.5"/>'
+        f'<line x1="24" y1="34" x2="24" y2="46" stroke="{c}" stroke-width="3.5"/>'
+        f'<circle cx="24" cy="14" r="3.5" fill="{c}"/>'
+        f'<circle cx="24" cy="34" r="3.5" fill="{c}"/>'
+        f'{contact}</svg>'
+    )
 
 
 def send(value: bool) -> None:
@@ -92,15 +153,28 @@ def index() -> str:
         connection = _ctx["connection"]
     val = breaker.value if breaker is not None else None
     if val is True:
-        cls, label = "closed", "CLOSED"
+        dkey, label, sub = "closed", "CLOSED", "energized"
     elif val is False:
-        cls, label = "open", "OPEN"
+        dkey, label, sub = "open", "OPEN", "de-energized"
     else:
-        cls, label = "unknown", "UNKNOWN"
+        dkey, label, sub = "unknown", "UNKNOWN", "awaiting RTU"
+
     conn = "connecting"
     if connection is not None:
         conn = "connected" if connection.is_connected else "disconnected"
-    return PAGE.format(cls=cls, label=label, server=SERVER, port=PORT, conn=conn)
+
+    repl = {
+        "__DKEY__": dkey,
+        "__GLYPH__": _glyph(dkey),
+        "__LABEL__": label,
+        "__SUB__": sub,
+        "__CONN__": conn,
+        "__TS__": time.strftime("%H:%M:%S"),
+    }
+    page = PAGE
+    for key, value in repl.items():
+        page = page.replace(key, value)
+    return page
 
 
 @app.route("/open", methods=["POST"])
