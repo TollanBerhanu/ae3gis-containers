@@ -29,6 +29,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     isc-dhcp-client \
     && rm -rf /var/lib/apt/lists/*
 
+# IEC-104 client (c104) in a venv, so this authorized engineering workstation can
+# issue legitimate control commands to the RTU (used by the Industroyer tutorial).
+RUN python3 -m venv /opt/venv && /opt/venv/bin/pip install --no-cache-dir c104
+
 # SSH setup: root password + allow root/password login
 RUN mkdir /var/run/sshd && \
     echo 'root:pass' | chpasswd && \
@@ -51,6 +55,6 @@ CMD ["sh", "-c", "rsyslogd && exec /usr/sbin/sshd -D"]
 
 # AE3GIS image metadata (see image-standard.md)
 LABEL org.opencontainers.image.title="Benign client" \
-      org.opencontainers.image.description="Ubuntu 24.04 client with traffic generators (run_ping.sh, run_http.sh, run_ftp.sh, run_nmap.sh)." \
+      org.opencontainers.image.description="Ubuntu 24.04 client with traffic generators (run_ping.sh, run_http.sh, run_ftp.sh, run_nmap.sh) and a c104 IEC-104 client venv at /opt/venv." \
       io.ae3gis.schema="1" \
       io.ae3gis.type="workstation"

@@ -11,6 +11,7 @@ This container provides a standard Ubuntu client with basic networking tools for
 - Network scanning tools (nmap, netcat)
 - Logging enabled (rsyslog)
 - Python 3 with venv for ad-hoc scripting
+- IEC-104 client (c104) in `/opt/venv` for engineering-workstation control tasks
 - Traffic scripts for ping, nmap, HTTP, and FTP (2-second interval by default)
 
 ## Installed Packages
@@ -21,7 +22,7 @@ This container provides a standard Ubuntu client with basic networking tools for
 - **Utilities**: curl, wget, procps, ca-certificates
 - **DNS**: bind9-dnsutils (`dig`, `nslookup`)
 - **Security Tools**: nmap, netcat-openbsd
-- **Python**: python3, python3-venv (`python` points to `python3`)
+- **Python**: python3, python3-venv (`python` points to `python3`); c104 IEC-104 client in `/opt/venv`
 
 ## Usage in GNS3
 

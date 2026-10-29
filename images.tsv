@@ -3,7 +3,7 @@
 # change: scripts/publish.sh never overwrites a version that is already on Hub.
 #
 # folder           version  platforms
-benign-client      v0.8     linux/amd64,linux/arm64
+benign-client      v0.9     linux/amd64,linux/arm64
 malicious-client   v0.7     linux/amd64,linux/arm64
 apache-server      v0.2     linux/amd64,linux/arm64
 nginx-server       v0.3     linux/amd64,linux/arm64
