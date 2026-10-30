@@ -1,0 +1,59 @@
+#!/opt/venv/bin/python3 -u
+"""breaker - read or switch the substation breaker over IEC-104.
+
+A friendly wrapper around the c104 (IEC 60870-5-104) client so the breaker can
+be driven with one word instead of a script:
+
+    breaker status     # print CLOSED / OPEN
+    breaker open        # trip the breaker (cut power)
+    breaker close       # restore the breaker
+
+It connects to the RTU and sends a single-command (C_SC_NA_1) to the breaker's
+command point, then reads back the state point. Targets are overridable by env
+(BREAKER_RTU/PORT/CA/STATE_IOA/CMD_IOA) but default to this lab's values.
+"""
+import os
+import sys
+import time
+
+import c104
+
+RTU = os.environ.get("BREAKER_RTU", "10.0.3.50")
+PORT = int(os.environ.get("BREAKER_PORT", "2404"))
+CA = int(os.environ.get("BREAKER_CA", "47"))
+STATE_IOA = int(os.environ.get("BREAKER_STATE_IOA", "11"))
+CMD_IOA = int(os.environ.get("BREAKER_CMD_IOA", "12"))
+
+
+def main() -> int:
+    action = (sys.argv[1] if len(sys.argv) > 1 else "status").lower()
+    if action not in ("status", "open", "close"):
+        print("usage: breaker [status|open|close]", file=sys.stderr)
+        return 2
+
+    client = c104.Client()
+    conn = client.add_connection(ip=RTU, port=PORT)
+    station = conn.add_station(common_address=CA)
+    state = station.add_point(io_address=STATE_IOA, type=c104.Type.M_SP_NA_1)
+    command = station.add_point(io_address=CMD_IOA, type=c104.Type.C_SC_NA_1)
+    client.start()
+    time.sleep(2)
+
+    if action in ("open", "close"):
+        command.value = action == "close"  # close -> True, open -> False
+        command.transmit(cause=c104.Cot.ACTIVATION)
+        time.sleep(1)
+
+    conn.interrogation(common_address=CA)
+    time.sleep(1)
+    label = {True: "CLOSED", False: "OPEN"}.get(state.value, "UNKNOWN")
+
+    if action == "status":
+        print(f"breaker: {label}")
+    else:
+        print(f"breaker: {label}   ({action} command sent to RTU {RTU}:{PORT})")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

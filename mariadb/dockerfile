@@ -31,6 +31,11 @@ RUN python3 -m venv /opt/venv && \
     /opt/venv/bin/pip install --no-cache-dir pymodbus c104
 ENV PATH="/opt/venv/bin:$PATH"
 
+# A one-word breaker control tool (status|open|close) over IEC-104, so a shell
+# on this pivot can drive the RTU without a script.
+COPY breaker /usr/local/bin/breaker
+RUN chmod +x /usr/local/bin/breaker
+
 # SSH setup: root password + allow root/password login (lab-only, deliberate)
 RUN mkdir /var/run/sshd && \
     echo 'root:pass' | chpasswd && \

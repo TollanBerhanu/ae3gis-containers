@@ -12,7 +12,7 @@ iptables           v0.6     linux/amd64,linux/arm64
 nftables           v0.1     linux/amd64,linux/arm64
 open-vswitch       v0.1     linux/amd64,linux/arm64
 # ICS lab images
-mariadb            v0.1     linux/amd64,linux/arm64
+mariadb            v0.2     linux/amd64,linux/arm64
 c104-server        v0.1     linux/amd64,linux/arm64
 c104-hmi           v0.2     linux/amd64,linux/arm64
 process-sim        v0.1     linux/amd64,linux/arm64
