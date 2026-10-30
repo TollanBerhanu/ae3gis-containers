@@ -33,6 +33,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # issue legitimate control commands to the RTU (used by the Industroyer tutorial).
 RUN python3 -m venv /opt/venv && /opt/venv/bin/pip install --no-cache-dir c104
 
+# A one-word breaker control tool (status|open|close) over IEC-104.
+COPY breaker /usr/local/bin/breaker
+RUN chmod +x /usr/local/bin/breaker
+
 # SSH setup: root password + allow root/password login
 RUN mkdir /var/run/sshd && \
     echo 'root:pass' | chpasswd && \
