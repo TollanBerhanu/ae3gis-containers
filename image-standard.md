@@ -61,7 +61,7 @@ image's config, so they travel with the image and are versioned with each tag.
 | `io.ae3gis.shell` | Absolute path of the shell for boot commands, for images **without bash** (Alpine, BusyBox): `/bin/sh` | bash |
 | `io.ae3gis.own-bridge` | For a switch image that bridges its own ports (e.g. Open vSwitch): the bridge's interface name, e.g. `br0`. AE3GIS then only addresses it. | AE3GIS bridges |
 | `io.ae3gis.purdue-level` | Purdue model level of every node running this image, a number from 0 to 5 (3.5 = DMZ), e.g. `0` for a process simulator. Overrides the type's level, for a built-in type too; the Purdue layout and Purdue view place the node by it | the type's level, else the node's subnet's |
-| `io.ae3gis.default` | `true`: this image is its **new** type's default and supplies the type's metadata | |
+| `io.ae3gis.default` | `true`: this image is its type's default image (new nodes of the type use it). For a **new** type it also supplies the type's metadata; for a built-in type it replaces the built-in default while the registry is added | |
 
 Base images often set `org.opencontainers.image.title`/`description` themselves
 (e.g. an image `FROM` an upstream project inherits *its* title). Set both
@@ -89,8 +89,12 @@ into the image with `ENV`.
 
 - **A built-in type** (`io.ae3gis.type` is one AE3GIS already has, e.g. `plc`,
   `router`, `web-server`): the image joins that type as another variant. The
-  type's name, role, color and default image stay as they are; `type.*` labels
-  are ignored (`io.ae3gis.purdue-level`, being the image's own, still applies).
+  type's name, role and color stay as they are; `type.*` labels are ignored
+  (`io.ae3gis.purdue-level`, being the image's own, still applies). With
+  `io.ae3gis.default="true"` the image also becomes the type's default, so
+  nodes without an explicit image pull it (e.g. instead of building the
+  built-in default locally). The namespace added first wins a type's default;
+  removing the registry restores the built-in one.
 - **A new type**: the image labelled `io.ae3gis.default="true"` defines it
   (or, if none is, the first repo by name). That image must set
   `io.ae3gis.type.name` and `io.ae3gis.type.role`, or every image of the type is

@@ -60,4 +60,5 @@ CMD ["sh", "-c", "rsyslogd && /usr/sbin/sshd -D & exec /usr/sbin/vsftpd /etc/vsf
 LABEL org.opencontainers.image.title="vsftpd" \
       org.opencontainers.image.description="Ubuntu 24.04 + vsftpd; user ftpuser/ftppass, chrooted; SSH root/pass." \
       io.ae3gis.schema="1" \
-      io.ae3gis.type="ftp-server"
+      io.ae3gis.type="ftp-server" \
+      io.ae3gis.default="true"

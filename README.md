@@ -91,7 +91,7 @@ Working images are published to Docker Hub so AE3GIS can load them from a regist
 |---|---|
 | Image ref | `tollan/<folder>`: the repo is named after the image's folder (e.g. `tollan/nginx-server`) |
 | Tags | Each publish pushes the next `vX.Y` **and** `latest`. AE3GIS reads `latest`; a `vX.Y` tag is never overwritten, so pin one for a fixed image |
-| Labels | A `LABEL` block at the end of the Dockerfile: `io.ae3gis.schema="1"`, `io.ae3gis.type` (an AE3GIS node type), `org.opencontainers.image.title` and `.description`, plus `io.ae3gis.stability` / `io.ae3gis.own-bridge` where needed |
+| Labels | A `LABEL` block at the end of the Dockerfile: `io.ae3gis.schema="1"`, `io.ae3gis.type` (an AE3GIS node type), `org.opencontainers.image.title` and `.description`, plus `io.ae3gis.stability` / `io.ae3gis.own-bridge` where needed, and `io.ae3gis.default="true"` on the image a node type should default to (one per type: attacker → malicious-client, ftp-server → ftp-server, ids → zeek, siem → wazuh-manager, dhcp-server → isc-dhcp-server) |
 | Hub description | `[ae3gis] <title>`: the marker AE3GIS looks for. The folder's README becomes the repo overview |
 | Platforms | `linux/amd64` and `linux/arm64` |
 

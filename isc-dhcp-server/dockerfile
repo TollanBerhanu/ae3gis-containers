@@ -36,3 +36,11 @@ RUN chmod +x /usr/local/bin/start.sh
 
 # EXPOSE 22
 # CMD ["/usr/local/bin/start.sh"]
+
+# AE3GIS image metadata (see image-standard.md)
+LABEL org.opencontainers.image.title="ISC DHCP server" \
+      org.opencontainers.image.description="Ubuntu 24.04 + isc-dhcp-server. The DHCP service is started by hand (see /usr/local/bin/start.sh)." \
+      io.ae3gis.schema="1" \
+      io.ae3gis.type="dhcp-server" \
+      io.ae3gis.default="true" \
+      io.ae3gis.stability="experimental"

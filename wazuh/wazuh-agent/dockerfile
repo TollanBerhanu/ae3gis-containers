@@ -36,3 +36,10 @@ EXPOSE 22
 # The agent is started by hand once it knows its manager (see README), so its
 # log may not exist yet: tail -F waits for it instead of exiting.
 CMD service ssh start && exec tail -F /var/ossec/logs/ossec.log
+
+# AE3GIS image metadata (see image-standard.md)
+LABEL org.opencontainers.image.title="Wazuh agent" \
+      org.opencontainers.image.description="Ubuntu 24.04 host with the Wazuh agent installed (point it at a Wazuh manager)." \
+      io.ae3gis.schema="1" \
+      io.ae3gis.type="workstation" \
+      io.ae3gis.stability="experimental"

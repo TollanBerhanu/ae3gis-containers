@@ -35,3 +35,10 @@ EXPOSE 22
 
 # Start services: rsyslog and sshd
 CMD ["sh", "-c", "rsyslogd && exec /usr/sbin/sshd -D"]
+
+# AE3GIS image metadata (see image-standard.md)
+LABEL org.opencontainers.image.title="Snort 2" \
+      org.opencontainers.image.description="Ubuntu 24.04 + the packaged Snort 2 with its default rules." \
+      io.ae3gis.schema="1" \
+      io.ae3gis.type="ids" \
+      io.ae3gis.stability="experimental"

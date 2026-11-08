@@ -67,3 +67,10 @@ RUN sed -i 's|default-rule-path: /var/lib/suricata/rules|default-rule-path: /etc
 EXPOSE 22
 
 CMD ["sh", "-c", "sysctl -w net.ipv4.ip_forward=1 && rsyslogd && service ssh start && suricata -i eth0 -c /etc/suricata/suricata.yaml -D && tail -f /var/log/suricata/fast.log"]
+
+# AE3GIS image metadata (see image-standard.md)
+LABEL org.opencontainers.image.title="Suricata" \
+      org.opencontainers.image.description="Ubuntu 24.04 + Suricata watching eth0, with local rules for ping and Nmap SYN scans." \
+      io.ae3gis.schema="1" \
+      io.ae3gis.type="ids" \
+      io.ae3gis.stability="experimental"

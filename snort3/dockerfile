@@ -70,3 +70,10 @@ EXPOSE 22
 
 # Start services: rsyslog and sshd
 CMD ["sh", "-c", "rsyslogd && exec /usr/sbin/sshd -D"]
+
+# AE3GIS image metadata (see image-standard.md)
+LABEL org.opencontainers.image.title="Snort 3" \
+      org.opencontainers.image.description="Snort 3 and libdaq compiled from source." \
+      io.ae3gis.schema="1" \
+      io.ae3gis.type="ids" \
+      io.ae3gis.stability="experimental"

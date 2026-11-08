@@ -4,10 +4,10 @@
 #
 # folder           version  platforms
 benign-client      v0.10    linux/amd64,linux/arm64
-malicious-client   v0.7     linux/amd64,linux/arm64
+malicious-client   v0.8     linux/amd64,linux/arm64
 apache-server      v0.2     linux/amd64,linux/arm64
 nginx-server       v0.3     linux/amd64,linux/arm64
-ftp-server         v0.2     linux/amd64,linux/arm64
+ftp-server         v0.3     linux/amd64,linux/arm64
 iptables           v0.6     linux/amd64,linux/arm64
 nftables           v0.1     linux/amd64,linux/arm64
 open-vswitch       v0.1     linux/amd64,linux/arm64
@@ -16,4 +16,15 @@ mariadb            v0.2     linux/amd64,linux/arm64
 c104-server        v0.1     linux/amd64,linux/arm64
 c104-hmi           v0.2     linux/amd64,linux/arm64
 process-sim        v0.2     linux/amd64,linux/arm64
-zeek               v0.1     linux/amd64,linux/arm64
+zeek               v0.2     linux/amd64,linux/arm64
+# More lab images (also built by AE3GIS from this repo; published so nodes can pull them)
+smb                v0.1     linux/amd64,linux/arm64
+isc-dhcp-server    v0.1     linux/amd64,linux/arm64
+firefox            v0.1     linux/amd64,linux/arm64
+wazuh/wazuh-agent  v0.1     linux/amd64,linux/arm64
+wazuh/wazuh-manager v0.1    linux/amd64,linux/arm64
+firehol            v0.1     linux/amd64,linux/arm64
+suricata           v0.1     linux/amd64,linux/arm64
+snort3             v0.1     linux/amd64,linux/arm64
+snort2             v0.1     linux/amd64,linux/arm64
+openplc            v0.1     linux/amd64,linux/arm64

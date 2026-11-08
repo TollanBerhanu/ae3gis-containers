@@ -41,4 +41,5 @@ CMD ["sh", "-c", "rsyslogd && exec /usr/sbin/sshd -D"]
 LABEL org.opencontainers.image.title="Attack toolkit" \
       org.opencontainers.image.description="Ubuntu 24.04 with nmap, hydra, john, netcat and sshpass (for the credential-reuse pivot)." \
       io.ae3gis.schema="1" \
-      io.ae3gis.type="attacker"
+      io.ae3gis.type="attacker" \
+      io.ae3gis.default="true"
