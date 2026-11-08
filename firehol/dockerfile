@@ -40,3 +40,10 @@ RUN echo "START_FIREHOL=YES" > /etc/default/firehol
 
 # Start services: apply sysctl settings, start rsyslog, load firehol, and run sshd
 CMD ["sh", "-c", "sysctl -p && rsyslogd && firehol start && exec /usr/sbin/sshd -D"]
+
+# AE3GIS image metadata (see image-standard.md)
+LABEL org.opencontainers.image.title="FireHOL" \
+      org.opencontainers.image.description="Ubuntu 24.04 + FireHOL with the package's default-drop ruleset." \
+      io.ae3gis.schema="1" \
+      io.ae3gis.type="firewall" \
+      io.ae3gis.stability="experimental"

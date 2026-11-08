@@ -31,3 +31,10 @@ CMD Xvfb :0 -screen 0 1024x768x24 & \
     fluxbox & \
     x11vnc -display :0 -usepw -forever & \
     firefox
+
+# AE3GIS image metadata (see image-standard.md)
+LABEL org.opencontainers.image.title="Firefox desktop" \
+      org.opencontainers.image.description="Alpine with Firefox on a virtual display (Xvfb + fluxbox), shared over VNC on 5900 (password gns3)." \
+      io.ae3gis.schema="1" \
+      io.ae3gis.type="workstation" \
+      io.ae3gis.stability="experimental"

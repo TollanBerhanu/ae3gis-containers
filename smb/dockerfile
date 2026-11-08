@@ -70,3 +70,10 @@ CMD ["/bin/bash","-c", "\
     service rsyslog start && \
     exec /usr/local/samba/sbin/smbd -F --no-process-group\
 "]
+
+# AE3GIS image metadata (see image-standard.md)
+LABEL org.opencontainers.image.title="Samba 4.5.9 (vulnerable)" \
+      org.opencontainers.image.description="Deliberately vulnerable Samba 4.5.9 compiled from source on Ubuntu 16.04." \
+      io.ae3gis.schema="1" \
+      io.ae3gis.type="file-server" \
+      io.ae3gis.stability="experimental"

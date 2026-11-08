@@ -75,4 +75,5 @@ LABEL org.opencontainers.image.title="Zeek" \
       org.opencontainers.image.description="Ubuntu 24.04 + Zeek (LTS) network security monitor with the ICSNPP Modbus analyzer. SSH root/pass." \
       io.ae3gis.schema="1" \
       io.ae3gis.type="ids" \
+      io.ae3gis.default="true" \
       io.ae3gis.stability="experimental"

@@ -39,3 +39,11 @@ RUN echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
 EXPOSE 22 1514/udp 1515/tcp
 
 CMD service ssh start && service wazuh-manager start && tail -f /var/ossec/logs/ossec.log
+
+# AE3GIS image metadata (see image-standard.md)
+LABEL org.opencontainers.image.title="Wazuh manager" \
+      org.opencontainers.image.description="Ubuntu 24.04 + the Wazuh manager (agents enrol on 1514/1515)." \
+      io.ae3gis.schema="1" \
+      io.ae3gis.type="siem" \
+      io.ae3gis.default="true" \
+      io.ae3gis.stability="experimental"
