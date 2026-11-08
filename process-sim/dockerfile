@@ -52,4 +52,5 @@ LABEL org.opencontainers.image.title="Process simulator" \
       org.opencontainers.image.description="Ubuntu 24.04 physical-process simulator + projector view (Flask on 8000); reads the field device over Modbus or IEC-104. SSH root/pass." \
       io.ae3gis.schema="1" \
       io.ae3gis.type="workstation" \
+      io.ae3gis.purdue-level="0" \
       io.ae3gis.stability="experimental"
